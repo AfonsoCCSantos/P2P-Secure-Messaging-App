@@ -28,6 +28,14 @@ public class Client {
 		int portNumber = generatePortNumber();
 		String ipAddress = getIpAddress();
 		writeUsersFile(username, portNumber, ipAddress);
+		
+		showMenu();
+		initialiseReceiveSocket(portNumber);
+	}
+
+	private static void initialiseReceiveSocket(int portNumber) {
+		ReceiveMessagesThread receiveMessagesThread = new ReceiveMessagesThread(portNumber);
+		receiveMessagesThread.start();
 	}
 	
 	public static int generatePortNumber() {
@@ -83,4 +91,11 @@ public class Client {
 		}
 		return ip;
 	}
+	
+	private static void showMenu() {
+		System.out.println("Commands:");
+		System.out.println("talkTo <username> - Allows you to send messages to the user named username");
+		System.out.println();
+		System.out.println("Messages: ");
+    }
 }
