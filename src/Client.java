@@ -6,8 +6,8 @@ import java.io.IOException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Random;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.net.*;
+import java.io.*;
 
 public class Client {
 	
@@ -71,13 +71,16 @@ public class Client {
 	}
 	
 	private static String getIpAddress() {
-//		InetAddress myIP = null;
-//		try {
-//			myIP = InetAddress.getLocalHost();
-//		} catch (UnknownHostException e) {
-//			e.printStackTrace();
-//		}
-//		return myIP.getHostAddress();
-		return "127.0.0.1";
+		URL whatismyip = null;
+		String ip = null;
+		try {
+			whatismyip = new URL("http://checkip.amazonaws.com");
+			BufferedReader in = new BufferedReader(new InputStreamReader(whatismyip.openStream()));
+	        ip = in.readLine();
+	        in.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return ip;
 	}
 }
