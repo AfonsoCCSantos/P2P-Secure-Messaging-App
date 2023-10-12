@@ -2,6 +2,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 import java.net.URL;
 import java.util.Random;
 
@@ -27,6 +30,28 @@ public class Utils {
 		}
 		return ip;
 	}
+	
+	public static ObjectOutputStream gOutputStream(Socket socket) {
+        ObjectOutputStream outStream = null;
+        try {
+            outStream = new ObjectOutputStream(socket.getOutputStream());
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        return outStream;
+    }
+	
+	public static ObjectInputStream gInputStream(Socket socket) {
+        ObjectInputStream inStream = null;
+        try {
+            inStream = new ObjectInputStream(socket.getInputStream());
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        return inStream;
+    }
 	
 	public static void createFile(String fileName) {
 		File file = new File(fileName);
