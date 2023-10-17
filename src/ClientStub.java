@@ -13,9 +13,9 @@ public class ClientStub {
 	
 	private static final String USERS_FILE = "users.txt"; //userName-ip:port
 	private String user;
-	private ReceiveMessagesThread receiveMessagesThread;
+	private AcceptConnectionsThread receiveMessagesThread;
 	
-	public ClientStub(String user, ReceiveMessagesThread receiveMessagesThread) {
+	public ClientStub(String user, AcceptConnectionsThread receiveMessagesThread) {
 		this.user = user;
 		this.receiveMessagesThread = receiveMessagesThread;
 	}
@@ -27,7 +27,6 @@ public class ClientStub {
 		boolean added = false;
 		try (BufferedReader reader = new BufferedReader(new FileReader(new File(USERS_FILE)))) {
 			line = reader.readLine();
-			System.out.println(line);
 			if (line == null) {
 				sb.append(fileLine);
 				added = true;
@@ -88,11 +87,16 @@ public class ClientStub {
 	public static String getUserIpPort(String username) {
 		String line = null;
 		String ipPort = null;
-		try (BufferedReader in = new BufferedReader(new FileReader(new File(USERS_FILE)))){
+		try (BufferedReader in = new BufferedReader(new FileReader(new File(USERS_FILE)))) {
 			line = in.readLine();
-			String[] tokens = line.split("-"); 
-			if(tokens[0].equals(username))
-				ipPort = tokens[1];
+			while (line != null) {
+				String[] tokens = line.split("-");
+				if(tokens[0].equals(username)) {
+					ipPort = tokens[1];
+					break;
+				}
+				line = in.readLine();
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

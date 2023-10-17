@@ -18,17 +18,18 @@ public class Utils {
 	}
 	
 	public static String getIpAddress() {
-		URL whatismyip = null;
-		String ip = null;
-		try {
-			whatismyip = new URL("http://checkip.amazonaws.com");
-			BufferedReader in = new BufferedReader(new InputStreamReader(whatismyip.openStream()));
-	        ip = in.readLine();
-	        in.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return ip;
+//		URL whatismyip = null;
+//		String ip = null;
+//		try {
+//			whatismyip = new URL("http://checkip.amazonaws.com");
+//			BufferedReader in = new BufferedReader(new InputStreamReader(whatismyip.openStream()));
+//	        ip = in.readLine();
+//	        in.close();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//		return ip;
+		return "127.0.0.1";
 	}
 	
 	public static ObjectOutputStream gOutputStream(Socket socket) {

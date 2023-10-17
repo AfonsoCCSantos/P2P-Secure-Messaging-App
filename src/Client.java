@@ -22,9 +22,8 @@ public class Client {
 		int portNumber = Utils.generatePortNumber();
 		String ipAddress = Utils.getIpAddress();
 		
-		
 		showMenu();
-		ReceiveMessagesThread receiveMessagesThread = initialiseReceiveSocket(portNumber);
+		AcceptConnectionsThread receiveMessagesThread = initialiseReceiveSocket(portNumber);
 		ClientStub clientStub = new ClientStub(username, receiveMessagesThread); 
 		clientStub.writeUsersFile(username, portNumber, ipAddress);
 		
@@ -39,15 +38,12 @@ public class Client {
 						System.out.println("This user does not exist.");						
 					}
 					break;
-					
 			}
-			
 		}
-		
 	} 
 
-	private static ReceiveMessagesThread initialiseReceiveSocket(int portNumber) {
-		ReceiveMessagesThread receiveMessages = new ReceiveMessagesThread(portNumber);
+	private static AcceptConnectionsThread initialiseReceiveSocket(int portNumber) {
+		AcceptConnectionsThread receiveMessages = new AcceptConnectionsThread(portNumber);
 		receiveMessages.start();
 		return receiveMessages;
 	}

@@ -2,3 +2,5 @@
 /ReceiveMessagesThread.class
 /ClientStub.class
 /Utils.class
+/TalkToThread.class
+/AcceptConnectionsThread.class
