@@ -23,8 +23,8 @@ public class Client {
 		String ipAddress = Utils.getIpAddress();
 		
 		showMenu();
-		AcceptConnectionsThread receiveMessagesThread = initialiseReceiveSocket(portNumber);
-		ClientStub clientStub = new ClientStub(username, receiveMessagesThread); 
+		AcceptConnectionsThread accepterThread = initialiseReceiveSocket(portNumber);
+		ClientStub clientStub = new ClientStub(username, accepterThread); 
 		clientStub.writeUsersFile(username, portNumber, ipAddress);
 		
 		while(true) {
@@ -34,8 +34,13 @@ public class Client {
 			switch(tokens[0]) {
 				case "talkTo":
 					int resultCode = clientStub.talkTo(tokens[1]);
-					if (resultCode == -1) {
-						System.out.println("This user does not exist.");						
+					switch (resultCode) {
+						case -1:
+							System.out.println("This user does not exist.");	
+							break;
+						case 0:
+							showMenu();
+							break;
 					}
 					break;
 			}

@@ -24,7 +24,7 @@ public class TalkToThread extends Thread {
 					System.out.println("(" + userName + ")" + " - " + message.substring(userName.length()+1));
 			}	
 		} catch (ClassNotFoundException | IOException e) {
-			e.printStackTrace();
+			//Do Nothing
 		}
 	}
 }

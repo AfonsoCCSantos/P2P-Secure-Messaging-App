@@ -31,6 +31,16 @@ public class AcceptConnectionsThread extends Thread {
 			Socket socket;
 			try {
 				socket = serverSocket.accept();
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
 				TalkToThread newTalkToThread = new TalkToThread(socket, this);
 				newTalkToThread.start();
 			} catch (IOException e) {

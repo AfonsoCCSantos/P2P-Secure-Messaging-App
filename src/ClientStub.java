@@ -13,11 +13,11 @@ public class ClientStub {
 	
 	private static final String USERS_FILE = "users.txt"; //userName-ip:port
 	private String user;
-	private AcceptConnectionsThread receiveMessagesThread;
+	private AcceptConnectionsThread accepterThread;
 	
-	public ClientStub(String user, AcceptConnectionsThread receiveMessagesThread) {
+	public ClientStub(String user, AcceptConnectionsThread accepterThread) {
 		this.user = user;
-		this.receiveMessagesThread = receiveMessagesThread;
+		this.accepterThread = accepterThread;
 	}
 	 
 	public void writeUsersFile(String username, int port, String ipAddress) {
@@ -60,7 +60,7 @@ public class ClientStub {
 		String ipPort = getUserIpPort(username);
 		if (ipPort == null) return -1;
 		
-		receiveMessagesThread.setUsername(username);
+		accepterThread.setUsername(username);
 		String[] ipPortTokens = ipPort.split(":");
 		
 		try {
@@ -70,13 +70,10 @@ public class ClientStub {
 			System.out.println("Chat with: " + username);
 			System.out.println("--------------------------");
 			while (true) {
-				System.out.println("Enter your message: ");
 				String message = sc.nextLine();
 				if (message.equals(":q")) return 0;
 				out.writeObject(this.user + "-" + message);		
-				System.out.println("(Me)" + " - " + message);
 			}
-			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -102,8 +99,4 @@ public class ClientStub {
 		}
 		return ipPort;
 	}
-	
-
-	
-
 }
