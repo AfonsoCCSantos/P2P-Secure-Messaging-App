@@ -1,8 +1,14 @@
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.Scanner;
 
 public class Client {
 	
 	private static final String USERS_FILE = "users.txt"; //userName-ip:port
+	private static final int SERVER_PORT_NUMBER = 6789;
 	
 	public static void main(String[] args) {
 		Scanner inputReader = new Scanner(System.in);
@@ -17,15 +23,15 @@ public class Client {
 			System.exit(-1);
 		}
 		
-		Utils.createFile(USERS_FILE);
-		
 		int portNumber = Utils.generatePortNumber();
 		String ipAddress = Utils.getIpAddress();
 		
 		showMenu();
-		AcceptConnectionsThread accepterThread = initialiseReceiveSocket(portNumber);
-		ClientStub clientStub = new ClientStub(username, accepterThread); 
-		clientStub.writeUsersFile(username, portNumber, ipAddress);
+		Socket talkToServer = connectToServerSocket();
+		AcceptConnectionsThread accepterThread = new AcceptConnectionsThread(portNumber);
+		ClientStub clientStub = new ClientStub(username, accepterThread, talkToServer); 
+		clientStub.registerInUsersFile(username, ipAddress, portNumber);
+		accepterThread.start();
 		
 		while(true) {
 			String command = inputReader.nextLine();
@@ -46,12 +52,6 @@ public class Client {
 			}
 		}
 	} 
-
-	private static AcceptConnectionsThread initialiseReceiveSocket(int portNumber) {
-		AcceptConnectionsThread receiveMessages = new AcceptConnectionsThread(portNumber);
-		receiveMessages.start();
-		return receiveMessages;
-	}
 	
 	private static boolean validateUsername(String userName) {
 		return !userName.contains("-");
@@ -63,6 +63,16 @@ public class Client {
 		System.out.println();
 		System.out.println("Messages: ");
     }
+    
+    private static Socket connectToServerSocket() {
+		Socket socket = null;
+		try {
+			socket = new Socket("127.0.0.1", SERVER_PORT_NUMBER);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return socket;
+	}
 	
 	
 }

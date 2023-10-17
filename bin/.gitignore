@@ -4,3 +4,6 @@
 /Utils.class
 /TalkToThread.class
 /AcceptConnectionsThread.class
+/Server.class
+/ServerSkel.class
+/ServerThread.class
