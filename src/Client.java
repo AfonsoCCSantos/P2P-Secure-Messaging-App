@@ -12,8 +12,8 @@ public class Client {
 	
 	public static void main(String[] args) {
 		Scanner inputReader = new Scanner(System.in);
-		if (args.length == 0) {
-			System.err.println("You need to provide an username.");
+		if (args.length < 2) {
+			System.err.println("You need to provide an username and a password for the keystore.");
 			System.exit(-1);
 		}
 		
@@ -23,13 +23,16 @@ public class Client {
 			System.exit(-1);
 		}
 		
+		String keystorePassword = args[1];
+		
 		int portNumber = Utils.generatePortNumber();
 		String ipAddress = Utils.getIpAddress();
 		
 		showMenu();
 		Socket talkToServer = connectToServerSocket();
 		AcceptConnectionsThread accepterThread = new AcceptConnectionsThread(portNumber);
-		ClientStub clientStub = new ClientStub(username, accepterThread, talkToServer); 
+		ClientStub clientStub = new ClientStub(username, accepterThread, talkToServer);
+		clientStub.keyStoreManage(username, keystorePassword);
 		clientStub.registerInUsersFile(username, ipAddress, portNumber);
 		accepterThread.start();
 		

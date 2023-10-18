@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -8,6 +9,12 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.Scanner;
 
 public class ClientStub {
@@ -18,6 +25,8 @@ public class ClientStub {
 	private AcceptConnectionsThread accepterThread;
 	private ObjectInputStream in;
 	private ObjectOutputStream out;
+	private KeyStore keyStore;
+	private PrivateKey privateKey;
 	
 	public ClientStub(String user, AcceptConnectionsThread accepterThread, Socket talkToServer) {
 		this.user = user;
@@ -25,7 +34,21 @@ public class ClientStub {
 		this.out = Utils.gOutputStream(talkToServer);
 		this.in = Utils.gInputStream(talkToServer);
 		System.out.println("in");
+		
 	}
+
+	public void keyStoreManage(String username, String keyStorePassword) {
+		try {
+			this.keyStore = KeyStore.getInstance("JKS");
+			FileInputStream keyStoreFile = new FileInputStream("keystore." + username);
+			this.keyStore.load(keyStoreFile, keyStorePassword.toCharArray());
+			String alias = this.keyStore.aliases().nextElement();
+			this.privateKey = (PrivateKey) this.keyStore.getKey(alias, keyStorePassword.toCharArray());
+		} catch (KeyStoreException | NoSuchAlgorithmException | CertificateException | IOException | UnrecoverableKeyException e) {
+			e.printStackTrace();
+		}
+	}
+		
 	
 	public void registerInUsersFile(String username, String ipAddress, int portNumber) {
 		try {
