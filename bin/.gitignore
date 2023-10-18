@@ -1,9 +1,8 @@
-/Client.class
-/ReceiveMessagesThread.class
-/ClientStub.class
-/Utils.class
-/TalkToThread.class
 /AcceptConnectionsThread.class
+/Client.class
+/ClientStub.class
 /Server.class
 /ServerSkel.class
 /ServerThread.class
+/TalkToThread.class
+/Utils.class

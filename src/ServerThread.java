@@ -24,7 +24,7 @@ public class ServerThread extends Thread {
 						String toWrite = (String) in.readObject();
 						String[] toWriteTokens = toWrite.split(" ");
 						System.out.println(toWrite);
-						serverSkel.writeUsersFile(toWriteTokens[0], Integer.parseInt(toWriteTokens[1]), toWriteTokens[2]);
+						serverSkel.writeUsersFile(toWriteTokens[0], Integer.parseInt(toWriteTokens[1]), toWriteTokens[2], toWriteTokens[3]);
 				}
 			} catch (ClassNotFoundException | IOException e) {
 				break;

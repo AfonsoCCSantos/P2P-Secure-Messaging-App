@@ -14,6 +14,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Scanner;
 
@@ -27,6 +28,7 @@ public class ClientStub {
 	private ObjectOutputStream out;
 	private KeyStore keyStore;
 	private PrivateKey privateKey;
+	private Certificate certificate;
 	
 	public ClientStub(String user, AcceptConnectionsThread accepterThread, Socket talkToServer) {
 		this.user = user;
@@ -43,6 +45,7 @@ public class ClientStub {
 			FileInputStream keyStoreFile = new FileInputStream("keystore." + username);
 			this.keyStore.load(keyStoreFile, keyStorePassword.toCharArray());
 			String alias = this.keyStore.aliases().nextElement();
+			this.certificate = this.keyStore.getCertificate(alias);
 			this.privateKey = (PrivateKey) this.keyStore.getKey(alias, keyStorePassword.toCharArray());
 		} catch (KeyStoreException | NoSuchAlgorithmException | CertificateException | IOException | UnrecoverableKeyException e) {
 			e.printStackTrace();
@@ -52,8 +55,9 @@ public class ClientStub {
 	
 	public void registerInUsersFile(String username, String ipAddress, int portNumber) {
 		try {
+			String certificateFileName = username + ".cer";
 			out.writeObject("WRITE_USERS_FILE");
-			out.writeObject(username + " " + portNumber + " " + ipAddress);
+			out.writeObject(username + " " + portNumber + " " + ipAddress + " " + certificateFileName);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

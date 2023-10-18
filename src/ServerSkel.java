@@ -9,9 +9,9 @@ import java.io.IOException;
 public class ServerSkel {
 	
 	private static final String USERS_FILE = "users.txt"; //userName-ip:port
-	
-	public void writeUsersFile(String username, int port, String ipAddress) {
-		String fileLine = username + "-" + ipAddress + ":" + port + "\n";
+
+	public void writeUsersFile(String username, int port, String ipAddress, String userCertficateFile) {
+		String fileLine = username + "-" + ipAddress + ":" + port + "-" + userCertficateFile +"\n";
 		StringBuilder sb = new StringBuilder();
 		String line = null;
 		boolean added = false;
