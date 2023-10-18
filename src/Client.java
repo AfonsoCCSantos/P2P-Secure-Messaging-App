@@ -33,7 +33,8 @@ public class Client {
 		AcceptConnectionsThread accepterThread = new AcceptConnectionsThread(portNumber);
 		ClientStub clientStub = new ClientStub(username, accepterThread, talkToServer);
 		clientStub.keyStoreManage(username, keystorePassword);
-		clientStub.registerInUsersFile(username, ipAddress, portNumber);
+		clientStub.login(username, ipAddress, portNumber);
+//		clientStub.registerInUsersFile(username, ipAddress, portNumber);
 		accepterThread.start();
 		
 		while(true) {
