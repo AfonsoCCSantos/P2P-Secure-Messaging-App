@@ -40,7 +40,6 @@ public class ServerSkel {
 			
 			//server verifies if user already exists and sends nonce
 			boolean userExists = userExists(username);
-			System.out.println(userExists);
 			Long loginNonce = rndGenerator.nextLong();
 			out.writeObject(userExists);
 			out.writeObject(loginNonce);
@@ -92,7 +91,7 @@ public class ServerSkel {
 			signature.update(nonce.byteValue());
 			
 			if(!signature.verify(signedNonce)) {
-				out.writeObject("Failed register.");
+				out.writeObject(Constants.REGISTRATION_FAILED);
 				return;
 			}
 			
@@ -108,8 +107,7 @@ public class ServerSkel {
 			String[] portIpAddressTokens = portIpAddress.split(" ");
 			writeUsersFile(username, Integer.parseInt(portIpAddressTokens[0]), portIpAddressTokens[1], userCertificateFile);
 			
-			out.writeObject("Registered successfully!");
-			
+			out.writeObject(Constants.REGISTRATION_SUCESSFUL);
 		} catch (ClassNotFoundException | IOException | InvalidKeyException | SignatureException | CertificateEncodingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -130,7 +128,7 @@ public class ServerSkel {
 			signature.update(nonce.byteValue());
 			
 			if(!signature.verify(signedNonce)) {
-				out.writeObject("Failed login.");
+				out.writeObject(Constants.LOGIN_FAILED);
 				return;
 			}
 			
@@ -141,16 +139,14 @@ public class ServerSkel {
 			String[] portIpAddressTokens = portIpAddress.split(" ");
 			writeUsersFile(username, Integer.parseInt(portIpAddressTokens[0]), portIpAddressTokens[1], userCertificateFile);
 			
-			out.writeObject("Login successfull!");
+			out.writeObject(Constants.LOGIN_SUCCESSFUL);
 			
 		} catch (ClassNotFoundException | IOException | InvalidKeyException | SignatureException | CertificateException e) {
 			e.printStackTrace();
 		}
 	}
 
-
 	public void writeUsersFile(String username, int port, String ipAddress, String userCertficateFile) {
-		System.out.println(userCertficateFile + " ola");
 		String fileLine = username + "-" + ipAddress + ":" + port + "-" + userCertficateFile +"\n";
 		StringBuilder sb = new StringBuilder();
 		String line = null;

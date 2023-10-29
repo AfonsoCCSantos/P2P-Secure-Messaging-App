@@ -35,13 +35,11 @@ public class ClientStub {
 		this.accepterThread = accepterThread;
 		this.out = Utils.gOutputStream(talkToServer);
 		this.in = Utils.gInputStream(talkToServer);
-		System.out.println("in");
-		
 	}
 
 	public void keyStoreManage(String username, String keyStorePassword) {
 		try {
-			this.keyStore = KeyStore.getInstance("JKS");
+			this.keyStore = KeyStore.getInstance("JCEKS");
 			FileInputStream keyStoreFile = new FileInputStream("keystore." + username);
 			this.keyStore.load(keyStoreFile, keyStorePassword.toCharArray());
 			String alias = this.keyStore.aliases().nextElement();
@@ -71,9 +69,11 @@ public class ClientStub {
 			}
 			
 			out.writeObject(portNumber + " " + ipAddress);
-			String serverMessage = (String) in.readObject();
-			System.out.println(serverMessage);
-			
+			Constants serverMessage = (Constants) in.readObject();
+			if (serverMessage != Constants.LOGIN_SUCCESSFUL && serverMessage != Constants.REGISTRATION_SUCESSFUL) {
+				System.out.println(serverMessage);
+				System.exit(-1);
+			}
 		} catch (IOException | ClassNotFoundException | NoSuchAlgorithmException | SignatureException | InvalidKeyException e) {
 			e.printStackTrace();
 		}
