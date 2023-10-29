@@ -13,6 +13,8 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Scanner;
 
+import client.ClientStub;
+import client.threads.AcceptConnectionsThread;
 import models.AssymetricEncryptionObjects;
 import utils.Utils;
 
