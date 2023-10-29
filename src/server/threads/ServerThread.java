@@ -1,9 +1,11 @@
+package server.threads;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.security.PublicKey;
 
+import server.ServerSkel;
 import utils.Utils;
 
 public class ServerThread extends Thread {
