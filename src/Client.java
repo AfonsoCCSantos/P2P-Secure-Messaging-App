@@ -1,8 +1,16 @@
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.util.Scanner;
 
 public class Client {
@@ -23,18 +31,15 @@ public class Client {
 			System.exit(-1);
 		}
 		
-		String keystorePassword = args[1];
-		
+		var assymEncryptionObjs = keyStoreManage(username, args[1]);
 		int portNumber = Utils.generatePortNumber();
 		String ipAddress = Utils.getIpAddress();
 		
 		showMenu();
 		Socket talkToServer = connectToServerSocket();
-		AcceptConnectionsThread accepterThread = new AcceptConnectionsThread(portNumber);
-		ClientStub clientStub = new ClientStub(username, accepterThread, talkToServer);
-		clientStub.keyStoreManage(username, keystorePassword);
+		AcceptConnectionsThread accepterThread = new AcceptConnectionsThread(portNumber, assymEncryptionObjs.getPrivateKey());
+		ClientStub clientStub = new ClientStub(username, accepterThread, talkToServer, assymEncryptionObjs);
 		clientStub.login(username, ipAddress, portNumber);
-//		clientStub.registerInUsersFile(username, ipAddress, portNumber);
 		accepterThread.start();
 		
 		while(true) {
@@ -77,6 +82,20 @@ public class Client {
 		}
 		return socket;
 	}
-	
-	
+    
+    public static AssymetricEncryptionObjects keyStoreManage(String username, String keyStorePassword) {
+    	AssymetricEncryptionObjects toReturn = null;
+		try {
+			KeyStore keyStore = KeyStore.getInstance("JCEKS");
+			FileInputStream keyStoreFile = new FileInputStream("keystore." + username);
+			keyStore.load(keyStoreFile, keyStorePassword.toCharArray());
+			String alias = keyStore.aliases().nextElement();
+			Certificate certificate = keyStore.getCertificate(alias);
+			PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, keyStorePassword.toCharArray());
+			toReturn = new AssymetricEncryptionObjects(keyStore, privateKey, certificate);
+		} catch (KeyStoreException | NoSuchAlgorithmException | CertificateException | IOException | UnrecoverableKeyException e) {
+			e.printStackTrace();
+		}
+		return toReturn;
+	}
 }

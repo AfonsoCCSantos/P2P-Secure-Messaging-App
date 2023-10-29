@@ -1,2 +1,0 @@
-client1-127.0.0.1:57311-client1.cer
-client2-127.0.0.1:60564-client2.cer

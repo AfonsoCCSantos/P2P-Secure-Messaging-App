@@ -31,24 +31,15 @@ public class ClientStub {
 	private PrivateKey privateKey;
 	private Certificate certificate;
 	
-	public ClientStub(String user, AcceptConnectionsThread accepterThread, Socket talkToServer) {
+	public ClientStub(String user, AcceptConnectionsThread accepterThread, Socket talkToServer,
+					  AssymetricEncryptionObjects assymEncObjects) {
 		this.user = user;
 		this.accepterThread = accepterThread;
 		this.outToServer = Utils.gOutputStream(talkToServer);
 		this.inFromServer = Utils.gInputStream(talkToServer);
-	}
-
-	public void keyStoreManage(String username, String keyStorePassword) {
-		try {
-			this.keyStore = KeyStore.getInstance("JCEKS");
-			FileInputStream keyStoreFile = new FileInputStream("keystore." + username);
-			this.keyStore.load(keyStoreFile, keyStorePassword.toCharArray());
-			String alias = this.keyStore.aliases().nextElement();
-			this.certificate = this.keyStore.getCertificate(alias);
-			this.privateKey = (PrivateKey) this.keyStore.getKey(alias, keyStorePassword.toCharArray());
-		} catch (KeyStoreException | NoSuchAlgorithmException | CertificateException | IOException | UnrecoverableKeyException e) {
-			e.printStackTrace();
-		}
+		this.keyStore = assymEncObjects.getKeystore();
+		this.privateKey = assymEncObjects.getPrivateKey();
+		this.certificate = assymEncObjects.getCertificate();
 	}
 	
 	public void login(String username, String ipAddress, int portNumber) {
@@ -98,8 +89,6 @@ public class ClientStub {
 		
 		PublicKey userToTalkPK = getUserPublicKey(username);
 		if (userToTalkPK == null) return -1;
-		System.out.println(userToTalkPK);
-		
 		
 		accepterThread.setUsername(username);
 		String[] ipPortTokens = ipPort.split(":");
@@ -112,11 +101,11 @@ public class ClientStub {
 			System.out.println("--------------------------");
 			while (true) {
 				String message = sc.nextLine();
+				String encryptedMessage = EncryptionUtils.rsaEncrypt(message, userToTalkPK);
 				if (message.equals(":q")) return 0;
-				outToClient.writeObject(this.user + "-" + message);		
+				outToClient.writeObject(this.user + "-" + encryptedMessage);		
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return 0;
