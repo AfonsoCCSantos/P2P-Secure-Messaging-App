@@ -3,6 +3,9 @@ import java.io.ObjectInputStream;
 import java.net.Socket;
 import java.security.PrivateKey;
 
+import utils.EncryptionUtils;
+import utils.Utils;
+
 public class TalkToThread extends Thread {
 	
 	private Socket socket;

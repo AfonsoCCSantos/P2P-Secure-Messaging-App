@@ -2,6 +2,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import utils.Utils;
+
 public class Server {
 	
 	private static final int PORT_NUMBER = 6789;

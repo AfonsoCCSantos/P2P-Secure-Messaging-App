@@ -19,6 +19,11 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Scanner;
 
+import models.AssymetricEncryptionObjects;
+import models.Constants;
+import utils.EncryptionUtils;
+import utils.Utils;
+
 public class ClientStub {
 	
 	private static final String USERS_FILE = "users.txt"; //userName-ip:port

@@ -1,3 +1,4 @@
+package models;
 
 public enum Constants {
 	LOGIN_FAILED,

@@ -4,6 +4,8 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.security.PublicKey;
 
+import utils.Utils;
+
 public class ServerThread extends Thread {
 	
 	private Socket socket;

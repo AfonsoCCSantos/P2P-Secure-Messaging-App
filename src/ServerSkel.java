@@ -20,6 +20,8 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 
+import models.Constants;
+
 public class ServerSkel {
 	
 	private static final String USERS_FILE = "users.txt"; //userName-ip:port

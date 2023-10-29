@@ -13,6 +13,9 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Scanner;
 
+import models.AssymetricEncryptionObjects;
+import utils.Utils;
+
 public class Client {
 	
 	private static final String USERS_FILE = "users.txt"; //userName-ip:port
