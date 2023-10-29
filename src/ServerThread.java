@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.security.PublicKey;
 
 public class ServerThread extends Thread {
 	
@@ -33,6 +34,12 @@ public class ServerThread extends Thread {
 						String username = (String) in.readObject();
 						String ipPort = serverSkel.getIpPort(username);
 						out.writeObject(ipPort);
+						break;
+					case "GET_USER_PK":
+						username = (String) in.readObject();
+						PublicKey pk = serverSkel.getPublicKey(username);
+						out.writeObject(pk);
+						break;
 				}
 			} catch (ClassNotFoundException | IOException e) {
 				break;

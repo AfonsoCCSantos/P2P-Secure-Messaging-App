@@ -11,6 +11,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
@@ -77,9 +78,6 @@ public class ClientStub {
 		} catch (IOException | ClassNotFoundException | NoSuchAlgorithmException | SignatureException | InvalidKeyException e) {
 			e.printStackTrace();
 		}
-		
-		
-		
 	}
 	
 	public void registerInUsersFile(String username, String ipAddress, int portNumber) {
@@ -94,8 +92,14 @@ public class ClientStub {
 	
 	public int talkTo(String username) {
 		Scanner sc = new Scanner(System.in);
+		
 		String ipPort = getUserIpPort(username);
 		if (ipPort == null) return -1;
+		
+		PublicKey userToTalkPK = getUserPublicKey(username);
+		if (userToTalkPK == null) return -1;
+		System.out.println(userToTalkPK);
+		
 		
 		accepterThread.setUsername(username);
 		String[] ipPortTokens = ipPort.split(":");
@@ -116,6 +120,18 @@ public class ClientStub {
 			e.printStackTrace();
 		}
 		return 0;
+	}
+	
+	public PublicKey getUserPublicKey(String username) {
+		PublicKey pk = null;
+		try {
+			outToServer.writeObject("GET_USER_PK");
+			outToServer.writeObject(username);
+			pk = (PublicKey) inFromServer.readObject();
+		} catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		return pk;
 	}
 	
 	public String getUserIpPort(String username) {

@@ -31,7 +31,6 @@ public class ServerSkel {
 	public ServerSkel(ObjectInputStream in, ObjectOutputStream out) {
 		this.in = in;
 		this.out = out;
-		
 	}
 	
 	public void loginUser() {
@@ -58,7 +57,6 @@ public class ServerSkel {
 			e.printStackTrace();
 		}
 	}
-	
 
 	private static boolean userExists(String username) {
 		String line = null;
@@ -179,6 +177,23 @@ public class ServerSkel {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}		
+	}
+	
+	public PublicKey getPublicKey(String username) {
+		PublicKey userToTalkPk = null;
+		try {
+			String userCertificateFile = username + ".cer";
+			FileInputStream fis = new FileInputStream(userCertificateFile);
+			CertificateFactory certFact = CertificateFactory.getInstance("X.509");
+			Certificate userCertificate = certFact.generateCertificate(fis);
+			
+			userToTalkPk = userCertificate.getPublicKey();
+		} catch (FileNotFoundException e) {
+			return null;
+		} catch (CertificateException e) {
+			e.printStackTrace();
+		}
+		return userToTalkPk;
 	}
 	
 	public String getIpPort(String username) {
