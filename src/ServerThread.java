@@ -29,6 +29,10 @@ public class ServerThread extends Thread {
 						System.out.println(toWrite);
 						serverSkel.writeUsersFile(toWriteTokens[0], Integer.parseInt(toWriteTokens[1]), toWriteTokens[2], toWriteTokens[3]);
 						break;
+					case "GET_USER_IPPORT":
+						String username = (String) in.readObject();
+						String ipPort = serverSkel.getIpPort(username);
+						out.writeObject(ipPort);
 				}
 			} catch (ClassNotFoundException | IOException e) {
 				break;

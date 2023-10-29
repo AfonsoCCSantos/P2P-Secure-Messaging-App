@@ -180,5 +180,24 @@ public class ServerSkel {
 			e.printStackTrace();
 		}		
 	}
+	
+	public String getIpPort(String username) {
+		String line = null;
+		String ipPort = null;
+		try (BufferedReader in = new BufferedReader(new FileReader(new File(USERS_FILE)))) {
+			line = in.readLine();
+			while (line != null) {
+				String[] tokens = line.split("-");
+				if(tokens[0].equals(username)) {
+					ipPort = tokens[1];
+					break;
+				}
+				line = in.readLine();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return ipPort;
+	}
 
 }

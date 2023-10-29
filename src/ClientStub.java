@@ -24,8 +24,8 @@ public class ClientStub {
 	
 	private String user;
 	private AcceptConnectionsThread accepterThread;
-	private ObjectInputStream in;
-	private ObjectOutputStream out;
+	private ObjectInputStream inFromServer;
+	private ObjectOutputStream outToServer;
 	private KeyStore keyStore;
 	private PrivateKey privateKey;
 	private Certificate certificate;
@@ -33,8 +33,8 @@ public class ClientStub {
 	public ClientStub(String user, AcceptConnectionsThread accepterThread, Socket talkToServer) {
 		this.user = user;
 		this.accepterThread = accepterThread;
-		this.out = Utils.gOutputStream(talkToServer);
-		this.in = Utils.gInputStream(talkToServer);
+		this.outToServer = Utils.gOutputStream(talkToServer);
+		this.inFromServer = Utils.gInputStream(talkToServer);
 	}
 
 	public void keyStoreManage(String username, String keyStorePassword) {
@@ -52,24 +52,24 @@ public class ClientStub {
 	
 	public void login(String username, String ipAddress, int portNumber) {
 		try {
-			out.writeObject("LOGIN");
-			out.writeObject(username);
+			outToServer.writeObject("LOGIN");
+			outToServer.writeObject(username);
 			
-			boolean userExists = (boolean) in.readObject();
-			byte serverNonce = ((Long) in.readObject()).byteValue();
+			boolean userExists = (boolean) inFromServer.readObject();
+			byte serverNonce = ((Long) inFromServer.readObject()).byteValue();
 			
 			Signature signature = Signature.getInstance("MD5withRSA");
 			signature.initSign(privateKey);
 			signature.update(serverNonce);
 			byte[] signedNonce = signature.sign();
-			out.writeObject(signedNonce);
+			outToServer.writeObject(signedNonce);
 			
 			if(!userExists) {
-				out.writeObject(this.certificate);
+				outToServer.writeObject(this.certificate);
 			}
 			
-			out.writeObject(portNumber + " " + ipAddress);
-			Constants serverMessage = (Constants) in.readObject();
+			outToServer.writeObject(portNumber + " " + ipAddress);
+			Constants serverMessage = (Constants) inFromServer.readObject();
 			if (serverMessage != Constants.LOGIN_SUCCESSFUL && serverMessage != Constants.REGISTRATION_SUCESSFUL) {
 				System.out.println(serverMessage);
 				System.exit(-1);
@@ -85,8 +85,8 @@ public class ClientStub {
 	public void registerInUsersFile(String username, String ipAddress, int portNumber) {
 		try {
 			String certificateFileName = username + ".cer";
-			out.writeObject("WRITE_USERS_FILE");
-			out.writeObject(username + " " + portNumber + " " + ipAddress + " " + certificateFileName);
+			outToServer.writeObject("WRITE_USERS_FILE");
+			outToServer.writeObject(username + " " + portNumber + " " + ipAddress + " " + certificateFileName);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -102,14 +102,14 @@ public class ClientStub {
 		
 		try {
 			Socket socket = new Socket(ipPortTokens[0], Integer.parseInt(ipPortTokens[1]));
-			ObjectOutputStream out = Utils.gOutputStream(socket);
+			ObjectOutputStream outToClient = Utils.gOutputStream(socket);
 			System.out.println("--------------------------");
 			System.out.println("Chat with: " + username);
 			System.out.println("--------------------------");
 			while (true) {
 				String message = sc.nextLine();
 				if (message.equals(":q")) return 0;
-				out.writeObject(this.user + "-" + message);		
+				outToClient.writeObject(this.user + "-" + message);		
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -118,20 +118,13 @@ public class ClientStub {
 		return 0;
 	}
 	
-	public static String getUserIpPort(String username) {
-		String line = null;
+	public String getUserIpPort(String username) {
 		String ipPort = null;
-		try (BufferedReader in = new BufferedReader(new FileReader(new File(USERS_FILE)))) {
-			line = in.readLine();
-			while (line != null) {
-				String[] tokens = line.split("-");
-				if(tokens[0].equals(username)) {
-					ipPort = tokens[1];
-					break;
-				}
-				line = in.readLine();
-			}
-		} catch (IOException e) {
+		try {
+			outToServer.writeObject("GET_USER_IPPORT");
+			outToServer.writeObject(username);
+			ipPort = (String) inFromServer.readObject();
+		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 		return ipPort;
