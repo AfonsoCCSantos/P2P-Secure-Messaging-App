@@ -1,16 +1,1 @@
-/AcceptConnectionsThread.class
-/Client.class
-/ClientStub.class
-/Server.class
-/ServerSkel.class
-/ServerThread.class
-/TalkToThread.class
-/Utils.class
-/Constants.class
-/EncryptionUtils.class
-/AssymetricEncryptionObjects.class
-/Utils/
-/models/
-/utils/
-/client/
 /server/
