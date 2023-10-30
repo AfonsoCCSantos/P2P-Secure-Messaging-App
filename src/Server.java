@@ -12,9 +12,8 @@ public class Server {
 	
 	public static void main(String[] args) { //Port will be 6789
 		ServerSocket serverSocket = initialiseSocket();
-		
 		Utils.createFile(USERS_FILE);
-		
+
 		while (true) {
 			Socket inSocket;
 			try {
