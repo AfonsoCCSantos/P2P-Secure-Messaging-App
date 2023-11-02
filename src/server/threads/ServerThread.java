@@ -49,6 +49,11 @@ public class ServerThread extends Thread {
 						username = (String) in.readObject();
 						serverSkel.createNewGroup(topic, username);
 						break;	
+					case "JOIN_GROUP":
+						topic = (String) in.readObject();
+						username = (String) in.readObject();
+						serverSkel.addUserToGroup(topic, username);
+						break;		
 				}
 			} catch (ClassNotFoundException | IOException e) {
 				break;

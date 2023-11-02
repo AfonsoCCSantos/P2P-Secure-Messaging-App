@@ -135,6 +135,26 @@ public class ClientStub {
 		return 0;
 	}
 	
+	public int joinGroup(String topic) {
+		try {
+			//tells server to add to group with topic and username
+			outToServer.writeObject("JOIN_GROUP");
+			outToServer.writeObject(topic);
+			outToServer.writeObject(user);
+			
+			//receive code of operation
+			Boolean success = (Boolean) inFromServer.readObject();
+						
+			//return -1 if fail
+			if(!success) return -1;	
+			//se sucesso recebe chave
+//			this.attributesKey = (SecretKey) inFromServer.readObject();
+		} catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		return 0;
+	}
+	
 	public PublicKey getUserPublicKey(String username) {
 		PublicKey pk = null;
 		try {

@@ -73,6 +73,17 @@ public class Client {
 							showMenu();
 							break;
 					}
+					break;
+				case "joinGroup":
+					resultCode = clientStub.joinGroup(tokens[1]);
+					switch (resultCode) {
+						case -1:
+							System.out.println("This group does not exist.");	
+							break;
+						case 0:
+							showMenu();
+							break;
+					}
 					break;	
 			}
 		}
@@ -86,6 +97,7 @@ public class Client {
 		System.out.println("Commands:");
 		System.out.println("talkTo <username> - Allows you to send messages to the user named username");
 		System.out.println("createGroup <topic> - Allows you to create a new group with the given topic");
+		System.out.println("joinGroup <topic> - Allows you to join the group with the given topic");
 		System.out.println();
 		System.out.println("Messages: ");
     }

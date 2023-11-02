@@ -73,6 +73,18 @@ public class ServerSkel {
 			e.printStackTrace();
 		}
 	}
+	
+	public void addUserToGroup(String topic, String username) {
+		//write in new group in groups file
+		int opCode = writeNewMemberGroupsFile(topic, username);
+		try {
+			//tells user if it succeeded
+			Boolean success = opCode == 0? true : false;
+			out.writeObject(success);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	private static boolean userExists(String username) {
 		String line = null;
@@ -209,7 +221,11 @@ public class ServerSkel {
 					sb.append(line + "\n");					
 				}
 				else {
-					sb.append(line + ";" + username + "\n");
+					if (userNotInLine(line.split("-")[1], username))
+						sb.append(line + ";" + username + "\n");
+					else {
+						sb.append(line);
+					}
 					added = true;
 				}
 				line = reader.readLine(); 
@@ -227,6 +243,14 @@ public class ServerSkel {
 			e.printStackTrace();
 		}
 		return 0;
+	}
+	
+	private boolean userNotInLine(String line, String username) {
+		String[] tokens = line.split(";");
+		for(String user : tokens) {
+			if(user.equals(username)) return false; 
+		}
+		return true;
 	}
 	
 	public int writeNewTopicGroupsFile(String topic, String username) {
