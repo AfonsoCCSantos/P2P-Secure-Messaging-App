@@ -14,6 +14,8 @@ import java.security.SignatureException;
 import java.security.cert.Certificate;
 import java.util.Scanner;
 
+import javax.crypto.SecretKey;
+
 import client.threads.AcceptConnectionsThread;
 import models.AssymetricEncryptionObjects;
 import models.Constants;
@@ -31,6 +33,7 @@ public class ClientStub {
 	private KeyStore keyStore;
 	private PrivateKey privateKey;
 	private Certificate certificate;
+	private SecretKey attributesKey;
 	
 	public ClientStub(String user, AcceptConnectionsThread accepterThread, Socket talkToServer,
 					  AssymetricEncryptionObjects assymEncObjects) {
@@ -107,6 +110,26 @@ public class ClientStub {
 				outToClient.writeObject(this.user + "-" + encryptedMessage);		
 			}
 		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return 0;
+	}
+	
+	public int createGroup(String topic) {
+		try {
+			//tells server to create new group with topic and username
+			outToServer.writeObject("CREATE_GROUP");
+			outToServer.writeObject(topic);
+			outToServer.writeObject(user);
+			
+			//receive code of operation
+			Boolean success = (Boolean) inFromServer.readObject();
+						
+			//return -1 if fail
+			if(!success) return -1;	
+			//se sucesso recebe chave
+//			this.attributesKey = (SecretKey) inFromServer.readObject();
+		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 		return 0;

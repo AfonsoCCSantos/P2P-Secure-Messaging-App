@@ -63,6 +63,17 @@ public class Client {
 							break;
 					}
 					break;
+				case "createGroup":
+					resultCode = clientStub.createGroup(tokens[1]);
+					switch (resultCode) {
+						case -1:
+							System.out.println("This group already exists.");	
+							break;
+						case 0:
+							showMenu();
+							break;
+					}
+					break;	
 			}
 		}
 	} 
@@ -74,6 +85,7 @@ public class Client {
 	private static void showMenu() {
 		System.out.println("Commands:");
 		System.out.println("talkTo <username> - Allows you to send messages to the user named username");
+		System.out.println("createGroup <topic> - Allows you to create a new group with the given topic");
 		System.out.println();
 		System.out.println("Messages: ");
     }

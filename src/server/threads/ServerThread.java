@@ -44,6 +44,11 @@ public class ServerThread extends Thread {
 						PublicKey pk = serverSkel.getPublicKey(username);
 						out.writeObject(pk);
 						break;
+					case "CREATE_GROUP":
+						String topic = (String) in.readObject();
+						username = (String) in.readObject();
+						serverSkel.createNewGroup(topic, username);
+						break;	
 				}
 			} catch (ClassNotFoundException | IOException e) {
 				break;

@@ -26,6 +26,7 @@ import models.Constants;
 public class ServerSkel {
 	
 	private static final String USERS_FILE = "users.txt"; //userName-ip:port
+	private static final String GROUPS_FILE = "groups.txt"; //groupTpoic-owner;user1;user2;...
 	
 	private static final SecureRandom rndGenerator = new SecureRandom();
 	ObjectInputStream in;
@@ -57,6 +58,18 @@ public class ServerSkel {
 				loginKnownUser(signature, username, signedNonce, loginNonce);
 			
 		} catch (ClassNotFoundException | IOException | NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void createNewGroup(String topic, String username) {
+		//write in new group in groups file
+		int opCode = writeNewTopicGroupsFile(topic, username);
+		try {
+			//tells user if it succeeded
+			Boolean success = opCode == 0? true : false;
+			out.writeObject(success);
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
@@ -180,6 +193,75 @@ public class ServerSkel {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}		
+	}
+	
+	public int writeNewMemberGroupsFile(String topic, String username) {
+		StringBuilder sb = new StringBuilder();
+		String line = null;
+		boolean added = false;
+		try (BufferedReader reader = new BufferedReader(new FileReader(new File(GROUPS_FILE)))) {
+			line = reader.readLine();
+			if (line == null) {
+				return -1;
+			}
+			while (line != null) {
+				if (!line.split("-")[0].equals(topic)) {
+					sb.append(line + "\n");					
+				}
+				else {
+					sb.append(line + ";" + username + "\n");
+					added = true;
+				}
+				line = reader.readLine(); 
+			}
+			if (!added) return -1;
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(GROUPS_FILE))) {
+			writer.write(sb.toString());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return 0;
+	}
+	
+	public int writeNewTopicGroupsFile(String topic, String username) {
+		String newLine = topic + "-" + username + "\n";
+		StringBuilder sb = new StringBuilder();
+		String line = null;
+		boolean added = false;
+		try (BufferedReader reader = new BufferedReader(new FileReader(new File(GROUPS_FILE)))) {
+			line = reader.readLine();
+			if (line == null) {
+				sb.append(newLine);
+				added = true;
+			}
+			while (line != null) {
+				if (!line.split("-")[0].equals(topic)) {
+					sb.append(line + "\n");					
+				}
+				else {
+					return -1;
+				}
+				line = reader.readLine(); 
+			}
+			if (!added) sb.append(newLine);
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(GROUPS_FILE))) {
+			writer.write(sb.toString());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return 0;
 	}
 	
 	public PublicKey getPublicKey(String username) {
