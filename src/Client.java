@@ -85,6 +85,17 @@ public class Client {
 							break;
 					}
 					break;	
+				case "talkToGroup":
+					resultCode = clientStub.talkToGroup(tokens[1]);
+					switch (resultCode) {
+						case -1:
+							System.out.println("NAO ENVIOU MENSAGEM.");	
+							break;
+						case 0:
+							showMenu();
+							break;
+					}
+					break;	
 			}
 		}
 	} 
@@ -96,6 +107,7 @@ public class Client {
 	private static void showMenu() {
 		System.out.println("Commands:");
 		System.out.println("talkTo <username> - Allows you to send messages to the user named username");
+		System.out.println("talkToGroup <topic> - Allows you to send messages to the group with the given topic");
 		System.out.println("createGroup <topic> - Allows you to create a new group with the given topic");
 		System.out.println("joinGroup <topic> - Allows you to join the group with the given topic");
 		System.out.println();

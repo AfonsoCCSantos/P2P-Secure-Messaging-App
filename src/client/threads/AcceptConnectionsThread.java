@@ -8,12 +8,14 @@ public class AcceptConnectionsThread extends Thread {
 	
 	private int port;	
 	private String username;
+	private String topic;
 	private PrivateKey privateKey;
 	
 	public AcceptConnectionsThread(int port, PrivateKey privateKey) {
 		this.port = port;	
 		this.privateKey = privateKey;
 		this.username = null;
+		this.topic = null;
 	}
 	
 	public void setUsername(String username) {
@@ -22,6 +24,14 @@ public class AcceptConnectionsThread extends Thread {
 	
 	public String getUsername() {
 		return username;
+	}
+	
+	public void setTopic(String topic) {
+		this.topic = topic;
+	}
+	
+	public String getTopic() {
+		return topic;
 	}
 	
 	public void run() {

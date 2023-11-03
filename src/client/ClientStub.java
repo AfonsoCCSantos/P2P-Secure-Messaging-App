@@ -12,6 +12,9 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.cert.Certificate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Observable;
 import java.util.Scanner;
 
 import javax.crypto.SecretKey;
@@ -22,7 +25,7 @@ import models.Constants;
 import utils.EncryptionUtils;
 import utils.Utils;
 
-public class ClientStub {
+public class ClientStub{
 	
 	private static final String USERS_FILE = "users.txt"; //userName-ip:port
 	
@@ -106,12 +109,58 @@ public class ClientStub {
 			while (true) {
 				String message = sc.nextLine();
 				String encryptedMessage = EncryptionUtils.rsaEncrypt(message, userToTalkPK);
-				if (message.equals(":q")) return 0;
+				if (message.equals(":q")) {
+					accepterThread.setUsername(null);
+					return 0;					
+				} 
+				outToClient.writeObject(false);	
 				outToClient.writeObject(this.user + "-" + encryptedMessage);		
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		return 0;
+	}
+	
+	public int talkToGroup(String topic) {
+		Scanner sc = new Scanner(System.in);
+		
+		try {
+			outToServer.writeObject("GET_GROUP_IP_PORTS");
+			outToServer.writeObject(topic);
+			outToServer.writeObject(user);
+			List<String> list = (List<String>) inFromServer.readObject();
+			List<ObjectOutputStream> sockeOutstreamtList = new ArrayList<>();
+			
+			accepterThread.setTopic(topic);
+			
+			System.out.println("--------------------------");
+			System.out.println("Chat Group : " + topic);
+			System.out.println("--------------------------");
+			
+			for(String ipPort : list) {
+				String[] ipPortTokens = ipPort.split(":");
+				Socket socket = new Socket(ipPortTokens[0], Integer.parseInt(ipPortTokens[1]));
+				ObjectOutputStream outToClient = Utils.gOutputStream(socket);
+				sockeOutstreamtList.add(outToClient);
+			}
+			
+			while (true) {
+				String message = sc.nextLine();
+				if (message.equals(":q")) {
+					accepterThread.setTopic(null);
+					return 0;					
+				} 
+				for (ObjectOutputStream outToClient : sockeOutstreamtList) {
+					outToClient.writeObject(true);		
+					outToClient.writeObject(topic + ":" + this.user + "-" + message);		
+				}
+			}
+						
+		} catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		
 		return 0;
 	}
 	

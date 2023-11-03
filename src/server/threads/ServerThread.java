@@ -4,6 +4,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.security.PublicKey;
+import java.util.List;
 
 import server.ServerSkel;
 import utils.Utils;
@@ -53,6 +54,12 @@ public class ServerThread extends Thread {
 						topic = (String) in.readObject();
 						username = (String) in.readObject();
 						serverSkel.addUserToGroup(topic, username);
+						break;		
+					case "GET_GROUP_IP_PORTS":
+						topic = (String) in.readObject();
+						username = (String) in.readObject();
+						List<String> list = serverSkel.getIpPortOfGroup(topic, username);
+						out.writeObject(list);
 						break;		
 				}
 			} catch (ClassNotFoundException | IOException e) {

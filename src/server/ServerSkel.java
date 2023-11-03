@@ -20,8 +20,12 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import models.Constants;
+import models.Group;
 
 public class ServerSkel {
 	
@@ -84,6 +88,48 @@ public class ServerSkel {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public List<String> getIpPortOfGroup(String topic, String username) {
+		List<String> listUsers = new ArrayList<>();
+		String groupLine;
+		String line;
+		try (BufferedReader reader = new BufferedReader(new FileReader(new File(GROUPS_FILE)))) {
+			line = reader.readLine();
+			if (line == null) {
+				return listUsers;
+			}
+			while (line != null) {
+				String[] tokens = line.split("-");
+				if (tokens[0].equals(topic)) {
+					groupLine = tokens[1];					
+				}
+				line = reader.readLine(); 
+			}
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		
+		try (BufferedReader reader = new BufferedReader(new FileReader(new File(USERS_FILE)))) {
+			line = reader.readLine();
+			if (line == null) {
+				return listUsers;
+			}
+			while (line != null) {
+				String[] tokens = line.split("-");
+				if (!tokens[0].equals(username)) {
+					listUsers.add(tokens[1]);		
+				}
+				line = reader.readLine(); 
+			}
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		return listUsers;
 	}
 
 	private static boolean userExists(String username) {
