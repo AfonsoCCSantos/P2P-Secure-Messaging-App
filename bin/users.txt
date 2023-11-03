@@ -1,3 +1,0 @@
-client1-127.0.0.1:55267-client1.cer
-client2-127.0.0.1:56675-client2.cer
-client3-127.0.0.1:58455-client3.cer

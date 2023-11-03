@@ -30,7 +30,7 @@ public class Server {
 			Socket inSocket;
 			try {
 				inSocket = serverSocket.accept();
-				ServerThread newServerThread = new ServerThread(inSocket);
+				ServerThread newServerThread = new ServerThread(inSocket, attributeEncryptionObjects);
 				newServerThread.start();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block

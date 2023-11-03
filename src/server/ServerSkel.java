@@ -24,6 +24,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import cn.edu.buaa.crypto.access.parser.ParserUtils;
+import cn.edu.buaa.crypto.access.parser.PolicySyntaxException;
+import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
+import models.AttributeEncryptionObjects;
 import models.Constants;
 import models.Group;
 
@@ -35,10 +39,12 @@ public class ServerSkel {
 	private static final SecureRandom rndGenerator = new SecureRandom();
 	ObjectInputStream in;
 	ObjectOutputStream out;
+	AttributeEncryptionObjects attributeEncryptionObjects;
 	
-	public ServerSkel(ObjectInputStream in, ObjectOutputStream out) {
+	public ServerSkel(AttributeEncryptionObjects attributeEncryptionObjects, ObjectInputStream in, ObjectOutputStream out) {
 		this.in = in;
 		this.out = out;
+		this.attributeEncryptionObjects = attributeEncryptionObjects;
 	}
 	
 	public void loginUser() {
@@ -73,7 +79,18 @@ public class ServerSkel {
 			//tells user if it succeeded
 			Boolean success = opCode == 0;
 			out.writeObject(success);
-		} catch (IOException e) {
+			
+			if (!success) return;
+			
+			//generates new key to policy with topic
+			String policy = topic;
+			int[][] accessPolicy = ParserUtils.GenerateAccessPolicy(policy);
+			String[] rhos = ParserUtils.GenerateRhos(policy);
+			PairingKeySerParameter secretKey = attributeEncryptionObjects.getEngine().keyGen(attributeEncryptionObjects.getPublicKey(), attributeEncryptionObjects.getMasterKey(), accessPolicy, rhos);
+			out.writeObject(secretKey);
+			out.writeObject(attributeEncryptionObjects.getPublicKey());
+			
+		} catch (IOException | PolicySyntaxException e) {
 			e.printStackTrace();
 		}
 	}
@@ -85,7 +102,18 @@ public class ServerSkel {
 			//tells user if it succeeded
 			Boolean success = opCode == 0;
 			out.writeObject(success);
-		} catch (IOException e) {
+			
+			if (!success) return;
+			
+			//generates new key to policy with topic
+			String policy = topic;
+			int[][] accessPolicy = ParserUtils.GenerateAccessPolicy(policy);
+			String[] rhos = ParserUtils.GenerateRhos(policy);
+			PairingKeySerParameter secretKey = attributeEncryptionObjects.getEngine().keyGen(attributeEncryptionObjects.getPublicKey(), attributeEncryptionObjects.getMasterKey(), accessPolicy, rhos);
+			out.writeObject(secretKey);
+			out.writeObject(attributeEncryptionObjects.getPublicKey());
+			
+		} catch (IOException | PolicySyntaxException e) {
 			e.printStackTrace();
 		}
 	}

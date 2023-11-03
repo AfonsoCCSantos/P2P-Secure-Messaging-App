@@ -6,21 +6,24 @@ import java.net.Socket;
 import java.security.PublicKey;
 import java.util.List;
 
+import models.AttributeEncryptionObjects;
 import server.ServerSkel;
 import utils.Utils;
 
 public class ServerThread extends Thread {
 	
 	private Socket socket;
+	AttributeEncryptionObjects attributeEncryptionObjects;
 	
-	public ServerThread(Socket socket) {
+	public ServerThread(Socket socket, AttributeEncryptionObjects attributeEncryptionObjects) {
 		this.socket = socket;
+		this.attributeEncryptionObjects = attributeEncryptionObjects;
 	}
 	
 	public void run() {
 		ObjectInputStream in = Utils.gInputStream(socket);
 		ObjectOutputStream out = Utils.gOutputStream(socket);
-		ServerSkel serverSkel = new ServerSkel(in, out);
+		ServerSkel serverSkel = new ServerSkel(attributeEncryptionObjects, in, out);
 		
 		while(true) {
 			try {

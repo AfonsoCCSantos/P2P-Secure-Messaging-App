@@ -4,12 +4,16 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.PrivateKey;
 
+import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
+
 public class AcceptConnectionsThread extends Thread {
 	
 	private int port;	
 	private String username;
 	private String topic;
 	private PrivateKey privateKey;
+	private PairingKeySerParameter attributesKey;
+	private PairingKeySerParameter publicAttributesKey;
 	
 	public AcceptConnectionsThread(int port, PrivateKey privateKey) {
 		this.port = port;	
@@ -18,6 +22,22 @@ public class AcceptConnectionsThread extends Thread {
 		this.topic = null;
 	}
 	
+	public PairingKeySerParameter getAttributesKey() {
+		return attributesKey;
+	}
+
+	public void setAttributesKey(PairingKeySerParameter attributesKey) {
+		this.attributesKey = attributesKey;
+	}
+
+	public PairingKeySerParameter getPublicAttributesKey() {
+		return publicAttributesKey;
+	}
+
+	public void setPublicAttributesKey(PairingKeySerParameter publicAttributesKey) {
+		this.publicAttributesKey = publicAttributesKey;
+	}
+
 	public void setUsername(String username) {
 		this.username = username;
 	}

@@ -13,10 +13,19 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+
 import client.threads.AcceptConnectionsThread;
+import cn.edu.buaa.crypto.algebra.serparams.PairingKeyEncapsulationSerPair;
+import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
+import cn.edu.buaa.crypto.encryption.abe.kpabe.KPABEEngine;
+import cn.edu.buaa.crypto.encryption.abe.kpabe.gpsw06a.KPABEGPSW06aEngine;
 import models.AssymetricEncryptionObjects;
 import models.Constants;
 import models.Message;
@@ -34,7 +43,8 @@ public class ClientStub{
 	private KeyStore keyStore;
 	private PrivateKey privateKey;
 	private Certificate certificate;
-	//private SecretKey attributesKey;
+	private PairingKeySerParameter attributesKey;
+	private PairingKeySerParameter publicAttributesKey;
 	
 	public ClientStub(String user, AcceptConnectionsThread accepterThread, Socket talkToServer,
 					  AssymetricEncryptionObjects assymEncObjects) {
@@ -111,7 +121,7 @@ public class ClientStub{
 					accepterThread.setUsername(null);
 					return 0;					
 				} 
-				Message messageToSend = new Message(false, this.user + "-" + encryptedMessage);
+				Message messageToSend = new Message(false, this.user + "-" + encryptedMessage, null, null);
 				outToClient.writeObject(messageToSend);
 //				outToClient.writeObject(false);	
 //				outToClient.writeObject(this.user + "-" + encryptedMessage);		
@@ -145,17 +155,28 @@ public class ClientStub{
 				sockeOutstreamtList.add(outToClient);
 			}
 			
+			//encapsulate session key
+			KPABEEngine engine = KPABEGPSW06aEngine.getInstance();
+			String[] attributes = new String[] {topic};
+			PairingKeyEncapsulationSerPair encapsulationPair = engine.encapsulation(publicAttributesKey, attributes); 
+			byte[] sessionKey = encapsulationPair.getSessionKey();
+			
+			SecretKey k1 = new SecretKeySpec(Arrays.copyOfRange(sessionKey, 0, 16), "AES");
+			IvParameterSpec iv = EncryptionUtils.generateIv();
+			
 			while (true) {
 				String message = sc.nextLine();
 				if (message.equals(":q")) {
 					accepterThread.setTopic(null);
 					return 0;					
 				} 
+				
+				//encrypt message
+				String encrypted = EncryptionUtils.aesEncrypt(message, k1, iv);
+				
 				for (ObjectOutputStream outToClient : sockeOutstreamtList) {
-					Message messageToSend = new Message(true, topic + ":" + this.user + "-" + message);
-					outToClient.writeObject(messageToSend);
-					//outToClient.writeObject(true);		
-					//outToClient.writeObject(topic + ":" + this.user + "-" + message);		
+					Message messageToSend = new Message(true, topic + ":" + this.user + "-" + encrypted, encapsulationPair.getHeader(), iv.getIV());
+					outToClient.writeObject(messageToSend);	
 				}
 			}
 						
@@ -178,8 +199,12 @@ public class ClientStub{
 						
 			//return -1 if fail
 			if(!success) return -1;	
+			
 			//se sucesso recebe chave
-//			this.attributesKey = (SecretKey) inFromServer.readObject();
+			this.attributesKey = (PairingKeySerParameter) inFromServer.readObject();
+			this.publicAttributesKey = (PairingKeySerParameter) inFromServer.readObject();
+			this.accepterThread.setAttributesKey(this.attributesKey);
+			this.accepterThread.setPublicAttributesKey(this.publicAttributesKey);
 		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -198,8 +223,12 @@ public class ClientStub{
 						
 			//return -1 if fail
 			if(!success) return -1;	
+			
 			//se sucesso recebe chave
-//			this.attributesKey = (SecretKey) inFromServer.readObject();
+			this.attributesKey = (PairingKeySerParameter) inFromServer.readObject();
+			this.publicAttributesKey = (PairingKeySerParameter) inFromServer.readObject();
+			this.accepterThread.setAttributesKey(this.attributesKey);
+			this.accepterThread.setPublicAttributesKey(this.publicAttributesKey);
 		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
