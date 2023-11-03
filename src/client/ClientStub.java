@@ -14,14 +14,12 @@ import java.security.SignatureException;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Observable;
 import java.util.Scanner;
-
-import javax.crypto.SecretKey;
 
 import client.threads.AcceptConnectionsThread;
 import models.AssymetricEncryptionObjects;
 import models.Constants;
+import models.Message;
 import utils.EncryptionUtils;
 import utils.Utils;
 
@@ -36,7 +34,7 @@ public class ClientStub{
 	private KeyStore keyStore;
 	private PrivateKey privateKey;
 	private Certificate certificate;
-	private SecretKey attributesKey;
+	//private SecretKey attributesKey;
 	
 	public ClientStub(String user, AcceptConnectionsThread accepterThread, Socket talkToServer,
 					  AssymetricEncryptionObjects assymEncObjects) {
@@ -113,8 +111,10 @@ public class ClientStub{
 					accepterThread.setUsername(null);
 					return 0;					
 				} 
-				outToClient.writeObject(false);	
-				outToClient.writeObject(this.user + "-" + encryptedMessage);		
+				Message messageToSend = new Message(false, this.user + "-" + encryptedMessage);
+				outToClient.writeObject(messageToSend);
+//				outToClient.writeObject(false);	
+//				outToClient.writeObject(this.user + "-" + encryptedMessage);		
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -152,8 +152,10 @@ public class ClientStub{
 					return 0;					
 				} 
 				for (ObjectOutputStream outToClient : sockeOutstreamtList) {
-					outToClient.writeObject(true);		
-					outToClient.writeObject(topic + ":" + this.user + "-" + message);		
+					Message messageToSend = new Message(true, topic + ":" + this.user + "-" + message);
+					outToClient.writeObject(messageToSend);
+					//outToClient.writeObject(true);		
+					//outToClient.writeObject(topic + ":" + this.user + "-" + message);		
 				}
 			}
 						

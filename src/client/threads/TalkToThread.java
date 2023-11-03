@@ -4,6 +4,7 @@ import java.io.ObjectInputStream;
 import java.net.Socket;
 import java.security.PrivateKey;
 
+import models.Message;
 import utils.EncryptionUtils;
 import utils.Utils;
 
@@ -23,10 +24,12 @@ public class TalkToThread extends Thread {
 		ObjectInputStream in = Utils.gInputStream(socket);
 		try {
 			while (true) {
-				boolean isGroup = (boolean) in.readObject();
-				String message = (String) in.readObject();
+				Message messageReceived = (Message) in.readObject();
+				String message = messageReceived.getMessage();
+//				boolean isGroup = (boolean) in.readObject();
+//				String message = (String) in.readObject();
 				//A mensagem tem metadata a indicar quem a enviou
-				if (isGroup) {
+				if (messageReceived.isGroup()) {
 					//topic:userName-mensagemEnviada
 					String[] tokens = message.split(":");
 					String topic = tokens[0];

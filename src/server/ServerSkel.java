@@ -71,7 +71,7 @@ public class ServerSkel {
 		int opCode = writeNewTopicGroupsFile(topic, username);
 		try {
 			//tells user if it succeeded
-			Boolean success = opCode == 0? true : false;
+			Boolean success = opCode == 0;
 			out.writeObject(success);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -83,7 +83,7 @@ public class ServerSkel {
 		int opCode = writeNewMemberGroupsFile(topic, username);
 		try {
 			//tells user if it succeeded
-			Boolean success = opCode == 0? true : false;
+			Boolean success = opCode == 0;
 			out.writeObject(success);
 		} catch (IOException e) {
 			e.printStackTrace();

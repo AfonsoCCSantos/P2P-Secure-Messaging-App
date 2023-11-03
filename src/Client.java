@@ -70,7 +70,10 @@ public class Client {
 							System.out.println("This group already exists.");	
 							break;
 						case 0:
-							showMenu();
+							System.out.println("Group was created!");
+							System.out.println();
+							System.out.println("Messages: ");
+							//showMenu();
 							break;
 					}
 					break;
@@ -81,7 +84,10 @@ public class Client {
 							System.out.println("This group does not exist.");	
 							break;
 						case 0:
-							showMenu();
+							System.out.println("You joined the group!");
+							System.out.println();
+							System.out.println("Messages: ");
+							//showMenu();
 							break;
 					}
 					break;	
