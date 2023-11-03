@@ -26,8 +26,6 @@ public class TalkToThread extends Thread {
 			while (true) {
 				Message messageReceived = (Message) in.readObject();
 				String message = messageReceived.getMessage();
-//				boolean isGroup = (boolean) in.readObject();
-//				String message = (String) in.readObject();
 				//A mensagem tem metadata a indicar quem a enviou
 				if (messageReceived.isGroup()) {
 					//topic:userName-mensagemEnviada
