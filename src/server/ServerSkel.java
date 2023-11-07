@@ -238,13 +238,35 @@ public class ServerSkel {
 			//receives and updated user port and ipAddress in users.txt
 			String portIpAddress = (String) in.readObject();
 			String[] portIpAddressTokens = portIpAddress.split(" ");
-			insertUser(username, Integer.parseInt(portIpAddressTokens[0]), portIpAddressTokens[1]);
+			updateUser(username, Integer.parseInt(portIpAddressTokens[0]), portIpAddressTokens[1]);
 			
 			out.writeObject(Constants.LOGIN_SUCCESSFUL);
 			
 		} catch (ClassNotFoundException | IOException | InvalidKeyException | SignatureException | CertificateException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public void updateUser(String username, int port, String ipAddress) {
+		try (Connection connection = dataSource.getConnection()) {
+			String updateSql = "UPDATE users SET ip_port = ? WHERE username = ?";
+			String ipPort = ipAddress + ":" + port;
+			try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
+	            preparedStatement.setString(1, ipPort);
+	            preparedStatement.setString(2, username);
+
+	            int rowsAffected = preparedStatement.executeUpdate();
+	            if (rowsAffected == 1) {
+	                System.out.println("User updated successfully.");
+	            } else {
+	                System.out.println("User update failed.");
+	            }
+	        } catch (SQLException e) {
+	            e.printStackTrace();
+	        }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 	}
 
 	public void insertUser(String username, int port, String ipAddress) {
@@ -288,7 +310,7 @@ public class ServerSkel {
                 }
             }
     		members = members + ";" + username;
-			String updateSql = "UPDATE Groups SET members = ? WHERE group_name = ?";
+			String updateSql = "UPDATE groups SET members = ? WHERE group_name = ?";
 			try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
 	            preparedStatement.setString(1, members);
 	            preparedStatement.setString(2, topic);
