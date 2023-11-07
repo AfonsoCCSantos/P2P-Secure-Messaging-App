@@ -1,11 +1,7 @@
 package server;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
+
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -24,9 +20,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -35,12 +31,8 @@ import cn.edu.buaa.crypto.access.parser.PolicySyntaxException;
 import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
 import models.AttributeEncryptionObjects;
 import models.Constants;
-import models.Group;
 
 public class ServerSkel {
-	
-	//private static final String USERS_FILE = "serverFiles/users.txt"; //userName-ip:port
-	//private static final String GROUPS_FILE = "serverFiles/groups.txt"; //groupTpoic-owner;user1;user2;...
 	
 	private static final SecureRandom rndGenerator = new SecureRandom();
 	private ObjectInputStream in;
@@ -82,13 +74,13 @@ public class ServerSkel {
 	
 	public void createNewGroup(String topic, String username) {
 		//write in new group in groups file
-		int opCode = insertNewGroup(topic, username);
+		long opCode = insertNewGroup(topic, username);
 		try {
 			//tells user if it succeeded
-			Boolean success = opCode == 0;
-			out.writeObject(success);
+			Boolean failed = opCode == -1;
+			out.writeObject(opCode);
 			
-			if (!success) return;
+			if (failed) return;
 			
 			//generates new key to policy with topic
 			String policy = topic;
@@ -331,16 +323,27 @@ public class ServerSkel {
 		return 0;
 	}
 	
-	public int insertNewGroup(String topic, String username) {
+	public long insertNewGroup(String topic, String username) {
+		long groupId = 0;
 		try (Connection connection = dataSource.getConnection()) {
 			String insertSql = "INSERT INTO groups (group_name, members) VALUES (?, ?)";
 			try (PreparedStatement preparedStatement = connection.prepareStatement(insertSql)) {
 	            preparedStatement.setString(1, topic);
 	            preparedStatement.setString(2, username);
-
 	            int rowsAffected = preparedStatement.executeUpdate();
 	            if (rowsAffected == 1) {
-	                System.out.println("User inserted successfully.");
+	                System.out.println("Group inserted successfully.");
+	                // Retrieve the auto-generated group_id using a subquery
+	                String lastInsertIdSql = "SELECT last_insert_rowid()";
+	                try (Statement statement = connection.createStatement();
+	                     ResultSet generatedKeys = statement.executeQuery(lastInsertIdSql)) {
+	                    if (generatedKeys.next()) {
+	                        groupId = generatedKeys.getLong(1);
+	                        System.out.println("Group inserted successfully with group_id: " + groupId);
+	                    } else {
+	                        System.out.println("Failed to retrieve generated group_id.");
+	                    }
+	                }
 	            } else {
 	                System.out.println("User insertion failed.");
 	                return -1;
@@ -351,7 +354,7 @@ public class ServerSkel {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-		return 0;
+		return groupId;
 	}
 	
 	public PublicKey getPublicKey(String username) {

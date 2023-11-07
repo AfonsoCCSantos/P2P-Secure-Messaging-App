@@ -12,6 +12,9 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.cert.Certificate;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -20,6 +23,8 @@ import java.util.Scanner;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import com.zaxxer.hikari.HikariDataSource;
 
 import client.threads.AcceptConnectionsThread;
 import cn.edu.buaa.crypto.algebra.serparams.PairingKeyEncapsulationSerPair;
@@ -43,9 +48,10 @@ public class ClientStub{
 	private Certificate certificate;
 	private PairingKeySerParameter attributesKey;
 	private PairingKeySerParameter publicAttributesKey;
+	private HikariDataSource dataSource;
 	
 	public ClientStub(String user, AcceptConnectionsThread accepterThread, Socket talkToServer,
-					  AssymetricEncryptionObjects assymEncObjects) {
+					  AssymetricEncryptionObjects assymEncObjects, HikariDataSource dataSource) {
 		this.user = user;
 		this.accepterThread = accepterThread;
 		this.outToServer = Utils.gOutputStream(talkToServer);
@@ -53,6 +59,7 @@ public class ClientStub{
 		this.keyStore = assymEncObjects.getKeystore();
 		this.privateKey = assymEncObjects.getPrivateKey();
 		this.certificate = assymEncObjects.getCertificate();
+		this.dataSource = dataSource;
 	}
 	
 	public void login(String username, String ipAddress, int portNumber) {
@@ -193,10 +200,13 @@ public class ClientStub{
 			outToServer.writeObject(user);
 			
 			//receive code of operation
-			Boolean success = (Boolean) inFromServer.readObject();
+			Long groupId = (Long) inFromServer.readObject();
+			boolean failed = groupId == -1;
 						
 			//return -1 if fail
-			if(!success) return -1;	
+			if(failed) return -1;	
+			
+			insertGroup(groupId);
 			
 			//se sucesso recebe chave
 			this.attributesKey = (PairingKeySerParameter) inFromServer.readObject();
@@ -207,6 +217,22 @@ public class ClientStub{
 			e.printStackTrace();
 		}
 		return 0;
+	}
+	
+	public void insertGroup(long groupId) {
+		try (Connection connection = dataSource.getConnection()) {
+			String insertSql = "INSERT INTO groups (group_id) VALUES (?)";
+			try (PreparedStatement preparedStatement = connection.prepareStatement(insertSql)) {
+	            preparedStatement.setLong(1, groupId);
+
+	            int rowsAffected = preparedStatement.executeUpdate();
+	        } catch (SQLException e) {
+	            e.printStackTrace();
+	        }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+		
 	}
 	
 	public int joinGroup(String topic) {

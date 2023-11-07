@@ -11,7 +11,13 @@ import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Scanner;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 import client.ClientStub;
 import client.threads.AcceptConnectionsThread;
@@ -35,6 +41,18 @@ public class Client {
 			System.exit(-1);
 		}
 		
+		HikariConfig config = new HikariConfig();
+		config.setJdbcUrl("jdbc:sqlite:" + username + "/client.db");
+		HikariDataSource dataSource = new HikariDataSource(config);
+		Connection connection = null;
+		try {
+			connection = dataSource.getConnection();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		createTables(connection);
+		
 		var assymEncryptionObjs = keyStoreManage(username, args[1]);
 		int portNumber = Utils.generatePortNumber();
 		String ipAddress = Utils.getIpAddress();
@@ -42,7 +60,7 @@ public class Client {
 		showMenu();
 		Socket talkToServer = connectToServerSocket();
 		AcceptConnectionsThread accepterThread = new AcceptConnectionsThread(portNumber, assymEncryptionObjs.getPrivateKey());
-		ClientStub clientStub = new ClientStub(username, accepterThread, talkToServer, assymEncryptionObjs);
+		ClientStub clientStub = new ClientStub(username, accepterThread, talkToServer, assymEncryptionObjs, dataSource);
 		clientStub.login(username, ipAddress, portNumber);
 		accepterThread.start();
 		
@@ -143,5 +161,17 @@ public class Client {
 			e.printStackTrace();
 		}
 		return toReturn;
+	}
+    
+    private static void createTables(Connection connection) {
+		Statement statement;
+		try {
+			statement = connection.createStatement();
+			statement.execute("DROP TABLE IF EXISTS groups");
+			statement.execute("CREATE TABLE groups ("
+                    + "group_id INTEGER PRIMARY KEY)");
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 }
