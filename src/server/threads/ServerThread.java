@@ -6,6 +6,8 @@ import java.net.Socket;
 import java.security.PublicKey;
 import java.util.List;
 
+import com.zaxxer.hikari.HikariDataSource;
+
 import models.AttributeEncryptionObjects;
 import server.ServerSkel;
 import utils.Utils;
@@ -13,17 +15,19 @@ import utils.Utils;
 public class ServerThread extends Thread {
 	
 	private Socket socket;
-	AttributeEncryptionObjects attributeEncryptionObjects;
+	private AttributeEncryptionObjects attributeEncryptionObjects;
+	private HikariDataSource dataSource;
 	
-	public ServerThread(Socket socket, AttributeEncryptionObjects attributeEncryptionObjects) {
+	public ServerThread(Socket socket, AttributeEncryptionObjects attributeEncryptionObjects, HikariDataSource dataSource) {
 		this.socket = socket;
 		this.attributeEncryptionObjects = attributeEncryptionObjects;
+		this.dataSource = dataSource;
 	}
 	
 	public void run() {
 		ObjectInputStream in = Utils.gInputStream(socket);
 		ObjectOutputStream out = Utils.gOutputStream(socket);
-		ServerSkel serverSkel = new ServerSkel(attributeEncryptionObjects, in, out);
+		ServerSkel serverSkel = new ServerSkel(attributeEncryptionObjects, in, out, dataSource);
 		
 		while(true) {
 			try {
@@ -32,12 +36,12 @@ public class ServerThread extends Thread {
 					case "LOGIN":
 						serverSkel.loginUser();
 						break;
-					case "WRITE_USERS_FILE":
-						String toWrite = (String) in.readObject();
-						String[] toWriteTokens = toWrite.split(" ");
-						System.out.println(toWrite);
-						serverSkel.writeUsersFile(toWriteTokens[0], Integer.parseInt(toWriteTokens[1]), toWriteTokens[2], toWriteTokens[3]);
-						break;
+//					case "WRITE_USERS_FILE":
+//						String toWrite = (String) in.readObject();
+//						String[] toWriteTokens = toWrite.split(" ");
+//						System.out.println(toWrite);
+//						serverSkel.writeUsersFile(toWriteTokens[0], Integer.parseInt(toWriteTokens[1]), toWriteTokens[2], toWriteTokens[3]);
+//						break;
 					case "GET_USER_IPPORT":
 						String username = (String) in.readObject();
 						String ipPort = serverSkel.getIpPort(username);

@@ -1,6 +1,12 @@
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerPair;
 import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
@@ -16,26 +22,52 @@ import utils.Utils;
 public class Server {
 	
 	private static final int PORT_NUMBER = 6789;
-	private static final String USERS_FILE = "serverFiles/users.txt"; //userName-ip:port
 	private static final String GROUPS_FILE = "serverFiles/groups.txt";
 	
 	public static void main(String[] args) { //Port will be 6789
 		ServerSocket serverSocket = initialiseSocket();
-		Utils.createFile(USERS_FILE);
 		Utils.createFile(GROUPS_FILE);
 		
-		AttributeEncryptionObjects attributeEncryptionObjects = getAttributeKeys();
+		HikariConfig config = new HikariConfig();
+		config.setJdbcUrl("jdbc:sqlite:serverFiles/serverDatabase.db");
+		HikariDataSource dataSource = new HikariDataSource(config);
+		Connection connection = null;
+		try {
+			connection = dataSource.getConnection();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 		
+		createTables(connection);
+		
+		AttributeEncryptionObjects attributeEncryptionObjects = getAttributeKeys();
 		while (true) {
 			Socket inSocket;
 			try {
 				inSocket = serverSocket.accept();
-				ServerThread newServerThread = new ServerThread(inSocket, attributeEncryptionObjects);
+				ServerThread newServerThread = new ServerThread(inSocket, attributeEncryptionObjects, dataSource);
 				newServerThread.start();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+		}
+	}
+	
+	private static void createTables(Connection connection) {
+		Statement statement;
+		try {
+			statement = connection.createStatement();
+			statement.execute("DROP TABLE IF EXISTS users");
+			statement.execute("CREATE TABLE users ("
+                    + "username TEXT PRIMARY KEY,"
+                    + "ip_port TEXT)");
+			statement.execute("DROP TABLE IF EXISTS groups");
+            statement.execute("CREATE TABLE groups ("
+                    + "group_name TEXT PRIMARY KEY,"
+                    + "members TEXT)");
+		} catch (SQLException e) {
+			e.printStackTrace();
 		}
 	}
 	

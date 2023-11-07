@@ -12,5 +12,8 @@
 	<classpathentry kind="lib" path="lib/CloudCrypto.jar"/>
 	<classpathentry kind="lib" path="lib/bcprov-ext-jdk18on-176.jar"/>
 	<classpathentry kind="lib" path="lib/bcprov-jdk18on-176.jar"/>
+	<classpathentry kind="lib" path="lib/HikariCP-5.1.0.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-api-1.7.36.jar"/>
+	<classpathentry kind="lib" path="lib/sqlite-jdbc-3.43.2.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
