@@ -97,13 +97,13 @@ public class ServerSkel {
 	
 	public void addUserToGroup(String topic, String username) {
 		//write in new group in groups file
-		int opCode = insertMemberIntoGroup(topic, username);
+		long opCode = insertMemberIntoGroup(topic, username);
 		try {
 			//tells user if it succeeded
-			Boolean success = opCode == 0;
-			out.writeObject(success);
+			Boolean failed = opCode == -1;
+			out.writeObject(opCode);
 			
-			if (!success) return;
+			if (failed) return;
 			
 			//generates new key to policy with topic
 			String policy = topic;
@@ -283,7 +283,8 @@ public class ServerSkel {
         }
 	}
 	
-	public int insertMemberIntoGroup(String topic, String username) {
+	public long insertMemberIntoGroup(String topic, String username) {
+		long groupId = 0;
 		String members = null;
 		try (Connection connection = dataSource.getConnection()) {
             // Select members for the given group name
@@ -317,10 +318,24 @@ public class ServerSkel {
 	        } catch (SQLException e) {
 	            e.printStackTrace();
 	        }
+			
+			selectSql = "SELECT group_id FROM groups WHERE group_name = ?";
+		    try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
+		        preparedStatement.setString(1, topic);
+
+		        try (ResultSet resultSet = preparedStatement.executeQuery()) {
+		            if (resultSet.next()) {
+		                groupId = resultSet.getLong("group_id");
+		                System.out.println("groupId for group " + topic + ": " + groupId);
+		            } else {
+		                System.out.println("Group not found: " + topic);
+		            }
+		        }
+		    }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-		return 0;
+		return groupId;
 	}
 	
 	public long insertNewGroup(String topic, String username) {

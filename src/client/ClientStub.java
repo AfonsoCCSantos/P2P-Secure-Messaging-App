@@ -232,7 +232,6 @@ public class ClientStub{
         } catch (SQLException e) {
             e.printStackTrace();
         }
-		
 	}
 	
 	public int joinGroup(String topic) {
@@ -243,10 +242,13 @@ public class ClientStub{
 			outToServer.writeObject(user);
 			
 			//receive code of operation
-			Boolean success = (Boolean) inFromServer.readObject();
+			Long groupId = (Long) inFromServer.readObject();
 						
+			boolean failed = groupId == -1;
 			//return -1 if fail
-			if(!success) return -1;	
+			if(failed) return -1;	
+			
+			insertGroup(groupId);
 			
 			//se sucesso recebe chave
 			this.attributesKey = (PairingKeySerParameter) inFromServer.readObject();
