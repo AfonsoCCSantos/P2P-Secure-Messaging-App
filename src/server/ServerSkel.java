@@ -33,8 +33,8 @@ import models.Group;
 
 public class ServerSkel {
 	
-	private static final String USERS_FILE = "users.txt"; //userName-ip:port
-	private static final String GROUPS_FILE = "groups.txt"; //groupTpoic-owner;user1;user2;...
+	private static final String USERS_FILE = "serverFiles/users.txt"; //userName-ip:port
+	private static final String GROUPS_FILE = "serverFiles/groups.txt"; //groupTpoic-owner;user1;user2;...
 	
 	private static final SecureRandom rndGenerator = new SecureRandom();
 	ObjectInputStream in;

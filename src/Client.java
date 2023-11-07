@@ -20,7 +20,6 @@ import utils.Utils;
 
 public class Client {
 	
-	private static final String USERS_FILE = "users.txt"; //userName-ip:port
 	private static final int SERVER_PORT_NUMBER = 6789;
 	
 	public static void main(String[] args) {
@@ -134,7 +133,7 @@ public class Client {
     	AssymetricEncryptionObjects toReturn = null;
 		try {
 			KeyStore keyStore = KeyStore.getInstance("JCEKS");
-			FileInputStream keyStoreFile = new FileInputStream("keystore." + username);
+			FileInputStream keyStoreFile = new FileInputStream(username + "/keystore." + username);
 			keyStore.load(keyStoreFile, keyStorePassword.toCharArray());
 			String alias = keyStore.aliases().nextElement();
 			Certificate certificate = keyStore.getCertificate(alias);

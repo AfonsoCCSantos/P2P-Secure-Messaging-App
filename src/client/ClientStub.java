@@ -34,8 +34,6 @@ import utils.Utils;
 
 public class ClientStub{
 	
-	private static final String USERS_FILE = "users.txt"; //userName-ip:port
-	
 	private String user;
 	private AcceptConnectionsThread accepterThread;
 	private ObjectInputStream inFromServer;

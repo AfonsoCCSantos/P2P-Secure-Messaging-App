@@ -16,8 +16,8 @@ import utils.Utils;
 public class Server {
 	
 	private static final int PORT_NUMBER = 6789;
-	private static final String USERS_FILE = "users.txt"; //userName-ip:port
-	private static final String GROUPS_FILE = "groups.txt";
+	private static final String USERS_FILE = "serverFiles/users.txt"; //userName-ip:port
+	private static final String GROUPS_FILE = "serverFiles/groups.txt";
 	
 	public static void main(String[] args) { //Port will be 6789
 		ServerSocket serverSocket = initialiseSocket();
