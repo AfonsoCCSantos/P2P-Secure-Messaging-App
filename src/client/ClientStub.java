@@ -138,7 +138,7 @@ public class ClientStub{
 			outToServer.writeObject(topic);
 			outToServer.writeObject(user);
 			List<String> list = (List<String>) inFromServer.readObject();
-			List<ObjectOutputStream> sockeOutstreamtList = new ArrayList<>();
+			List<ObjectOutputStream> socketOutstreamList = new ArrayList<>();
 			
 			accepterThread.setTopic(topic);
 			
@@ -150,7 +150,7 @@ public class ClientStub{
 				String[] ipPortTokens = ipPort.split(":");
 				Socket socket = new Socket(ipPortTokens[0], Integer.parseInt(ipPortTokens[1]));
 				ObjectOutputStream outToClient = Utils.gOutputStream(socket);
-				sockeOutstreamtList.add(outToClient);
+				socketOutstreamList.add(outToClient);
 			}
 			
 			//encapsulate session key
@@ -172,7 +172,7 @@ public class ClientStub{
 				//encrypt message
 				String encrypted = EncryptionUtils.aesEncrypt(message, k1, iv);
 				
-				for (ObjectOutputStream outToClient : sockeOutstreamtList) {
+				for (ObjectOutputStream outToClient : socketOutstreamList) {
 					Message messageToSend = new Message(true, topic + ":" + this.user + "-" + encrypted, encapsulationPair.getHeader(), iv.getIV());
 					outToClient.writeObject(messageToSend);	
 				}

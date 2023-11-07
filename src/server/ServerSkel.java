@@ -39,8 +39,8 @@ import models.Group;
 
 public class ServerSkel {
 	
-	private static final String USERS_FILE = "serverFiles/users.txt"; //userName-ip:port
-	private static final String GROUPS_FILE = "serverFiles/groups.txt"; //groupTpoic-owner;user1;user2;...
+	//private static final String USERS_FILE = "serverFiles/users.txt"; //userName-ip:port
+	//private static final String GROUPS_FILE = "serverFiles/groups.txt"; //groupTpoic-owner;user1;user2;...
 	
 	private static final SecureRandom rndGenerator = new SecureRandom();
 	private ObjectInputStream in;
@@ -82,7 +82,7 @@ public class ServerSkel {
 	
 	public void createNewGroup(String topic, String username) {
 		//write in new group in groups file
-		int opCode = writeNewTopicGroupsFile(topic, username);
+		int opCode = insertNewGroup(topic, username);
 		try {
 			//tells user if it succeeded
 			Boolean success = opCode == 0;
@@ -105,7 +105,7 @@ public class ServerSkel {
 	
 	public void addUserToGroup(String topic, String username) {
 		//write in new group in groups file
-		int opCode = writeNewMemberGroupsFile(topic, username);
+		int opCode = insertMemberIntoGroup(topic, username);
 		try {
 			//tells user if it succeeded
 			Boolean success = opCode == 0;
@@ -127,63 +127,56 @@ public class ServerSkel {
 	}
 	
 	public List<String> getIpPortOfGroup(String topic, String username) {
-		List<String> listUsers = new ArrayList<>();
-		String groupLine;
-		String line;
-		try (BufferedReader reader = new BufferedReader(new FileReader(new File(GROUPS_FILE)))) {
-			line = reader.readLine();
-			if (line == null) {
-				return listUsers;
-			}
-			while (line != null) {
-				String[] tokens = line.split("-");
-				if (tokens[0].equals(topic)) {
-					groupLine = tokens[1];					
+		String membersList = null;
+		List<String> ipPorts = new ArrayList<String>();
+		try (Connection connection = dataSource.getConnection()) {
+            // Select members for the given group name
+            String selectSql = "SELECT members FROM groups WHERE group_name = ?";
+            try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
+                preparedStatement.setString(1, topic);
+
+                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                    if (resultSet.next()) {
+                        membersList = resultSet.getString("members");
+                        System.out.println("Members of group " + topic + ": " + membersList);
+                    } else {
+                        System.out.println("Group not found: " + topic);
+                        return null;
+                    }
+                }
+            }
+    		String[] members = membersList.split(";");
+    		for (int i = 0; i < members.length; i++) {
+				if(!members[i].equals(username)) {
+					String ipPort = getIpPort(members[i]);
+    				ipPorts.add(ipPort);
 				}
-				line = reader.readLine(); 
-			}
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		
-		try (BufferedReader reader = new BufferedReader(new FileReader(new File(USERS_FILE)))) {
-			line = reader.readLine();
-			if (line == null) {
-				return listUsers;
-			}
-			while (line != null) {
-				String[] tokens = line.split("-");
-				if (!tokens[0].equals(username)) {
-					listUsers.add(tokens[1]);		
-				}
-				line = reader.readLine(); 
-			}
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		return listUsers;
+    		}
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+		return ipPorts;
 	}
 
-	private static boolean userExists(String username) {
-		String line = null;
-		try (BufferedReader reader = new BufferedReader(new FileReader(new File(USERS_FILE)))) {
-			line = reader.readLine();
-			while (line != null) {
-				if (line.split("-")[0].equals(username)) {
-					return true;				
-				}
-				line = reader.readLine(); 
-			}
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		return false;
+	private boolean userExists(String username) {
+		try (Connection connection = dataSource.getConnection()) {
+            // Retrieve the user's "ip_port" by username
+            String selectSql = "SELECT ip_port FROM users WHERE username = ?";
+            try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
+                preparedStatement.setString(1, username);
+                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                    if (resultSet.next()) {
+                        System.out.println("User exists");
+                    } else {
+                        System.out.println("User not found: " + username);
+                        return false;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+		return true;
 	}
 	
 	private void registerNewUser(Signature signature, String username, byte[] signedNonce, Long nonce) {
@@ -276,84 +269,66 @@ public class ServerSkel {
         }
 	}
 	
-	public int writeNewMemberGroupsFile(String topic, String username) {
-		StringBuilder sb = new StringBuilder();
-		String line = null;
-		boolean added = false;
-		try (BufferedReader reader = new BufferedReader(new FileReader(new File(GROUPS_FILE)))) {
-			line = reader.readLine();
-			if (line == null) {
-				return -1;
-			}
-			while (line != null) {
-				if (!line.split("-")[0].equals(topic)) {
-					sb.append(line + "\n");					
-				}
-				else {
-					if (userNotInLine(line.split("-")[1], username))
-						sb.append(line + ";" + username + "\n");
-					else {
-						sb.append(line);
-					}
-					added = true;
-				}
-				line = reader.readLine(); 
-			}
-			if (!added) return -1;
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		
-		try (BufferedWriter writer = new BufferedWriter(new FileWriter(GROUPS_FILE))) {
-			writer.write(sb.toString());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	public int insertMemberIntoGroup(String topic, String username) {
+		String members = null;
+		try (Connection connection = dataSource.getConnection()) {
+            // Select members for the given group name
+            String selectSql = "SELECT members FROM groups WHERE group_name = ?";
+            try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
+                preparedStatement.setString(1, topic);
+
+                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                    if (resultSet.next()) {
+                        members = resultSet.getString("members");
+                        System.out.println("Members of group " + topic + ": " + members);
+                    } else {
+                        System.out.println("Group not found: " + topic);
+                        return -1;
+                    }
+                }
+            }
+    		members = members + ";" + username;
+			String updateSql = "UPDATE Groups SET members = ? WHERE group_name = ?";
+			try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
+	            preparedStatement.setString(1, members);
+	            preparedStatement.setString(2, topic);
+	
+	            int rowsAffected = preparedStatement.executeUpdate();
+	            if (rowsAffected == 1) {
+	                System.out.println("User inserted successfully into group.");
+	            } else {
+	                System.out.println("User insertion failed.");
+	                return -1;
+	            }
+	        } catch (SQLException e) {
+	            e.printStackTrace();
+	        }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 		return 0;
 	}
 	
-	private boolean userNotInLine(String line, String username) {
-		String[] tokens = line.split(";");
-		for(String user : tokens) {
-			if(user.equals(username)) return false; 
-		}
-		return true;
-	}
-	
-	public int writeNewTopicGroupsFile(String topic, String username) {
-		String newLine = topic + "-" + username + "\n";
-		StringBuilder sb = new StringBuilder();
-		String line = null;
-		boolean added = false;
-		try (BufferedReader reader = new BufferedReader(new FileReader(new File(GROUPS_FILE)))) {
-			line = reader.readLine();
-			if (line == null) {
-				sb.append(newLine);
-				added = true;
-			}
-			while (line != null) {
-				if (!line.split("-")[0].equals(topic)) {
-					sb.append(line + "\n");					
-				}
-				else {
-					return -1;
-				}
-				line = reader.readLine(); 
-			}
-			if (!added) sb.append(newLine);
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		
-		try (BufferedWriter writer = new BufferedWriter(new FileWriter(GROUPS_FILE))) {
-			writer.write(sb.toString());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	public int insertNewGroup(String topic, String username) {
+		try (Connection connection = dataSource.getConnection()) {
+			String insertSql = "INSERT INTO groups (group_name, members) VALUES (?, ?)";
+			try (PreparedStatement preparedStatement = connection.prepareStatement(insertSql)) {
+	            preparedStatement.setString(1, topic);
+	            preparedStatement.setString(2, username);
+
+	            int rowsAffected = preparedStatement.executeUpdate();
+	            if (rowsAffected == 1) {
+	                System.out.println("User inserted successfully.");
+	            } else {
+	                System.out.println("User insertion failed.");
+	                return -1;
+	            }
+	        } catch (SQLException e) {
+	            e.printStackTrace();
+	        }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 		return 0;
 	}
 	

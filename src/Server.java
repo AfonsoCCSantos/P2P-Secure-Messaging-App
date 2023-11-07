@@ -22,11 +22,9 @@ import utils.Utils;
 public class Server {
 	
 	private static final int PORT_NUMBER = 6789;
-	private static final String GROUPS_FILE = "serverFiles/groups.txt";
 	
 	public static void main(String[] args) { //Port will be 6789
 		ServerSocket serverSocket = initialiseSocket();
-		Utils.createFile(GROUPS_FILE);
 		
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl("jdbc:sqlite:serverFiles/serverDatabase.db");
@@ -63,8 +61,9 @@ public class Server {
                     + "username TEXT PRIMARY KEY,"
                     + "ip_port TEXT)");
 			statement.execute("DROP TABLE IF EXISTS groups");
-            statement.execute("CREATE TABLE groups ("
-                    + "group_name TEXT PRIMARY KEY,"
+			statement.execute("CREATE TABLE groups ("
+                    + "group_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "group_name TEXT,"
                     + "members TEXT)");
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -92,9 +91,4 @@ public class Server {
 		
 		return new AttributeEncryptionObjects(engine, publicKey, masterKey);
 	}
-	
-	
-	
-	
-
 }

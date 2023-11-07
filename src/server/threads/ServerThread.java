@@ -36,12 +36,6 @@ public class ServerThread extends Thread {
 					case "LOGIN":
 						serverSkel.loginUser();
 						break;
-//					case "WRITE_USERS_FILE":
-//						String toWrite = (String) in.readObject();
-//						String[] toWriteTokens = toWrite.split(" ");
-//						System.out.println(toWrite);
-//						serverSkel.writeUsersFile(toWriteTokens[0], Integer.parseInt(toWriteTokens[1]), toWriteTokens[2], toWriteTokens[3]);
-//						break;
 					case "GET_USER_IPPORT":
 						String username = (String) in.readObject();
 						String ipPort = serverSkel.getIpPort(username);
