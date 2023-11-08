@@ -40,6 +40,7 @@ public class TalkToThread extends Thread {
 				//A mensagem tem metadata a indicar quem a enviou
 				if (messageReceived.isGroup()) {
 					//topic:userName-mensagemEnviada
+					Long groupId = messageReceived.getGroupId();
 					String[] tokens = message.split(":");
 					String topic = tokens[0];
 					String userName = tokens[1].split("-")[0];
@@ -50,7 +51,7 @@ public class TalkToThread extends Thread {
 					IvParameterSpec iv = new IvParameterSpec(ivBytes);
 					
 					KPABEEngine engine = KPABEGPSW06aEngine.getInstance();
-					String[] attributes = new String[] {topic};
+					String[] attributes = new String[] {groupId.toString()};
 					byte[] sessionKey = engine.decapsulation(accepterThread.getPublicAttributesKey(), accepterThread.getAttributesKey(), attributes, encapsulationPairHeader);
 					SecretKey k = new SecretKeySpec(Arrays.copyOfRange(sessionKey, 0, 16), "AES");
 					String decrypted = EncryptionUtils.aesDecrypt(text, k, iv);

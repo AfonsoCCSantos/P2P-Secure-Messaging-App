@@ -72,7 +72,7 @@ public class ServerSkel {
 		}
 	}
 	
-	public void createNewGroup(String topic, String username) {
+	public void createNewGroup(String topic, String username, List<Long> userGroupsIds) {
 		//write in new group in groups file
 		long opCode = insertNewGroup(topic, username);
 		try {
@@ -83,7 +83,7 @@ public class ServerSkel {
 			if (failed) return;
 			
 			//generates new key to policy with topic
-			String policy = topic;
+			String policy = createPolicy(userGroupsIds, opCode);
 			int[][] accessPolicy = ParserUtils.GenerateAccessPolicy(policy);
 			String[] rhos = ParserUtils.GenerateRhos(policy);
 			PairingKeySerParameter secretKey = attributeEncryptionObjects.getEngine().keyGen(attributeEncryptionObjects.getPublicKey(), attributeEncryptionObjects.getMasterKey(), accessPolicy, rhos);
@@ -95,7 +95,15 @@ public class ServerSkel {
 		}
 	}
 	
-	public void addUserToGroup(String topic, String username) {
+	private String createPolicy(List<Long> groupsIds, Long newGroupId) {
+		StringBuilder policy = new StringBuilder(newGroupId.toString());
+		for (Long id : groupsIds) {
+			policy.append(" or " + id);
+		}
+		return policy.toString();
+	}
+	
+	public void addUserToGroup(String topic, String username, List<Long> userGroupsIds) {
 		//write in new group in groups file
 		long opCode = insertMemberIntoGroup(topic, username);
 		try {
@@ -106,7 +114,7 @@ public class ServerSkel {
 			if (failed) return;
 			
 			//generates new key to policy with topic
-			String policy = topic;
+			String policy = createPolicy(userGroupsIds, opCode);
 			int[][] accessPolicy = ParserUtils.GenerateAccessPolicy(policy);
 			String[] rhos = ParserUtils.GenerateRhos(policy);
 			PairingKeySerParameter secretKey = attributeEncryptionObjects.getEngine().keyGen(attributeEncryptionObjects.getPublicKey(), attributeEncryptionObjects.getMasterKey(), accessPolicy, rhos);

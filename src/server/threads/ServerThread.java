@@ -49,12 +49,14 @@ public class ServerThread extends Thread {
 					case "CREATE_GROUP":
 						String topic = (String) in.readObject();
 						username = (String) in.readObject();
-						serverSkel.createNewGroup(topic, username);
+						List<Long> userGroupsIds = (List<Long>) in.readObject();
+						serverSkel.createNewGroup(topic, username, userGroupsIds);
 						break;	
 					case "JOIN_GROUP":
 						topic = (String) in.readObject();
 						username = (String) in.readObject();
-						serverSkel.addUserToGroup(topic, username);
+						userGroupsIds = (List<Long>) in.readObject();
+						serverSkel.addUserToGroup(topic, username, userGroupsIds);
 						break;		
 					case "GET_GROUP_IP_PORTS":
 						topic = (String) in.readObject();

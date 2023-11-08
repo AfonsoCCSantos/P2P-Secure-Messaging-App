@@ -14,6 +14,7 @@ import java.security.SignatureException;
 import java.security.cert.Certificate;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -126,7 +127,7 @@ public class ClientStub{
 					accepterThread.setUsername(null);
 					return 0;					
 				} 
-				Message messageToSend = new Message(false, this.user + "-" + encryptedMessage, null, null);
+				Message messageToSend = new Message(false, this.user + "-" + encryptedMessage, null, null, null);
 				outToClient.writeObject(messageToSend);
 //				outToClient.writeObject(false);	
 //				outToClient.writeObject(this.user + "-" + encryptedMessage);		
@@ -160,14 +161,17 @@ public class ClientStub{
 				socketOutstreamList.add(outToClient);
 			}
 			
+			Long groupId = getTopicId(topic);
+			
 			//encapsulate session key
 			KPABEEngine engine = KPABEGPSW06aEngine.getInstance();
-			String[] attributes = new String[] {topic};
+			String[] attributes = new String[] {groupId.toString()};
 			PairingKeyEncapsulationSerPair encapsulationPair = engine.encapsulation(publicAttributesKey, attributes); 
 			byte[] sessionKey = encapsulationPair.getSessionKey();
 			
 			SecretKey k1 = new SecretKeySpec(Arrays.copyOfRange(sessionKey, 0, 16), "AES");
 			IvParameterSpec iv = EncryptionUtils.generateIv();
+			
 			
 			while (true) {
 				String message = sc.nextLine();
@@ -180,7 +184,7 @@ public class ClientStub{
 				String encrypted = EncryptionUtils.aesEncrypt(message, k1, iv);
 				
 				for (ObjectOutputStream outToClient : socketOutstreamList) {
-					Message messageToSend = new Message(true, topic + ":" + this.user + "-" + encrypted, encapsulationPair.getHeader(), iv.getIV());
+					Message messageToSend = new Message(true, topic + ":" + this.user + "-" + encrypted, encapsulationPair.getHeader(), iv.getIV(), groupId);
 					outToClient.writeObject(messageToSend);	
 				}
 			}
@@ -195,9 +199,12 @@ public class ClientStub{
 	public int createGroup(String topic) {
 		try {
 			//tells server to create new group with topic and username
+			List<Long> groupsIds = getGroupsIds();
+			
 			outToServer.writeObject("CREATE_GROUP");
 			outToServer.writeObject(topic);
 			outToServer.writeObject(user);
+			outToServer.writeObject(groupsIds);
 			
 			//receive code of operation
 			Long groupId = (Long) inFromServer.readObject();
@@ -206,7 +213,7 @@ public class ClientStub{
 			//return -1 if fail
 			if(failed) return -1;	
 			
-			insertGroup(groupId);
+			insertGroup(groupId, topic);
 			
 			//se sucesso recebe chave
 			this.attributesKey = (PairingKeySerParameter) inFromServer.readObject();
@@ -219,11 +226,51 @@ public class ClientStub{
 		return 0;
 	}
 	
-	public void insertGroup(long groupId) {
+	private List<Long> getGroupsIds() {
+		List<Long> groupIdsList = new ArrayList<>();
 		try (Connection connection = dataSource.getConnection()) {
-			String insertSql = "INSERT INTO groups (group_id) VALUES (?)";
+            String selectSql = "SELECT group_id FROM groups";
+            try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
+                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                    if (resultSet.next()) {
+                        Long id = resultSet.getLong("group_id");
+                        groupIdsList.add(id);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+		return groupIdsList;
+	}
+	
+	private Long getTopicId(String topic) {
+		Long groupId = null;
+		try (Connection connection = dataSource.getConnection()) {
+            String selectSql = "SELECT group_id FROM groups WHERE group_name = ?";
+            try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
+            	preparedStatement.setString(1, topic);
+            	
+                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                    if (resultSet.next()) {
+                        groupId = resultSet.getLong("group_id");
+                    } else {
+		                System.out.println("User not in group with topic " + topic);
+		            }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+		return groupId;
+	}
+	
+	public void insertGroup(long groupId, String topic) {
+		try (Connection connection = dataSource.getConnection()) {
+			String insertSql = "INSERT INTO groups (group_id, group_name) VALUES (?, ?)";
 			try (PreparedStatement preparedStatement = connection.prepareStatement(insertSql)) {
 	            preparedStatement.setLong(1, groupId);
+	            preparedStatement.setString(2, topic);
 
 	            int rowsAffected = preparedStatement.executeUpdate();
 	        } catch (SQLException e) {
@@ -237,9 +284,11 @@ public class ClientStub{
 	public int joinGroup(String topic) {
 		try {
 			//tells server to add to group with topic and username
+			List<Long> groupsIds = getGroupsIds();
 			outToServer.writeObject("JOIN_GROUP");
 			outToServer.writeObject(topic);
 			outToServer.writeObject(user);
+			outToServer.writeObject(groupsIds);
 			
 			//receive code of operation
 			Long groupId = (Long) inFromServer.readObject();
@@ -248,7 +297,7 @@ public class ClientStub{
 			//return -1 if fail
 			if(failed) return -1;	
 			
-			insertGroup(groupId);
+			insertGroup(groupId, topic);
 			
 			//se sucesso recebe chave
 			this.attributesKey = (PairingKeySerParameter) inFromServer.readObject();

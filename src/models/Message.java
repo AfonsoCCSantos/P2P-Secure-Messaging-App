@@ -15,15 +15,27 @@ public class Message implements Serializable {
 	private String message;
 	private PairingCipherSerParameter encapsulationPairHeader;
 	private byte[] ivBytes;
+	private Long groupId;
 	
 	public Message(boolean isGroup, String message, PairingCipherSerParameter encapsulationPairHeader,
-			byte[] iv) {
+			byte[] iv, Long groupId) {
 		super();
 		this.isGroup = isGroup;
 		this.message = message;
 		this.encapsulationPairHeader = encapsulationPairHeader;
 		this.ivBytes = iv;
+		this.groupId = groupId;
 	}
+	
+	public Long getGroupId() {
+		return groupId;
+	}
+
+
+	public void setGroupId(Long groupId) {
+		this.groupId = groupId;
+	}
+
 
 	public boolean isGroup() {
 		return isGroup;

@@ -169,7 +169,8 @@ public class Client {
 			statement = connection.createStatement();
 			statement.execute("DROP TABLE IF EXISTS groups");
 			statement.execute("CREATE TABLE groups ("
-                    + "group_id INTEGER PRIMARY KEY)");
+                    + "group_id INTEGER PRIMARY KEY,"
+                    + "group_name TEXT)");
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
