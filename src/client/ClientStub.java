@@ -117,6 +117,13 @@ public class ClientStub{
 		try {
 			Socket socket = new Socket(ipPortTokens[0], Integer.parseInt(ipPortTokens[1]));
 			ObjectOutputStream outToClient = Utils.gOutputStream(socket);
+			
+			
+			//if we want to exchange something before the convo
+			//for example symmetric key
+			
+			
+			
 			System.out.println("--------------------------");
 			System.out.println("Chat with: " + username);
 			System.out.println("--------------------------");

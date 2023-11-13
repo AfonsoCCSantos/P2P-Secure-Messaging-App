@@ -33,6 +33,13 @@ public class TalkToThread extends Thread {
 	
 	public void run() {
 		ObjectInputStream in = Utils.gInputStream(socket);
+		
+		
+		//if you want to exchange something before the convo
+		//for example a symmetric key for the convo
+		
+		
+		
 		try {
 			while (true) {
 				Message messageReceived = (Message) in.readObject();
