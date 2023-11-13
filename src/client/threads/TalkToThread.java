@@ -57,35 +57,36 @@ public class TalkToThread extends Thread {
 			while (true) {
 				Message messageReceived = (Message) in.readObject();
 				String message = messageReceived.getMessage();
+				byte[] messageMac = mac.doFinal(message.getBytes());
+				if (!Arrays.equals(messageMac, messageReceived.getMac())) {
+					System.out.println("Message was corrupted.");
+					return;
+				}
 				//A mensagem tem metadata a indicar quem a enviou
 				if (messageReceived.isGroup()) {
 					//topic:userName-mensagemEnviada
 					Long groupId = messageReceived.getGroupId();
-					String[] tokens = message.split(":");
-					String topic = tokens[0];
-					String userName = tokens[1].split("-")[0];
-					String text = message.substring(topic.length()+userName.length()+2);
 					
 					PairingCipherSerParameter encapsulationPairHeader = messageReceived.getEncapsulationPairHeader();
 					byte[] ivBytes = messageReceived.getIv();
 					IvParameterSpec iv = new IvParameterSpec(ivBytes);
-					
 					KPABEEngine engine = KPABEGPSW06aEngine.getInstance();
 					String[] attributes = new String[] {groupId.toString()};
 					byte[] sessionKey = engine.decapsulation(accepterThread.getPublicAttributesKey(), accepterThread.getAttributesKey(), attributes, encapsulationPairHeader);
 					SecretKey k = new SecretKeySpec(Arrays.copyOfRange(sessionKey, 0, 16), "AES");
-					String decrypted = EncryptionUtils.aesDecrypt(text, k, iv);
+					String decrypted = EncryptionUtils.aesDecrypt(message, k, iv);
+					
+					String[] tokens = decrypted.split(":");
+					String topic = tokens[0];
+					String userName = tokens[1].split("-")[0];
+					String text = decrypted.substring(topic.length()+userName.length()+2);
 					
 					if ((accepterThread.getTopic() == null && accepterThread.getUsername() == null) || (accepterThread.getTopic() != null && accepterThread.getTopic().equals(topic)))
-						System.out.println("(" + topic +":" + userName + ")" + " - " + decrypted);
+						System.out.println("(" + topic +":" + userName + ")" + " - " + text);
 				}
 				else {
 					//userName-mensagemEnviada
-					byte[] messageMac = mac.doFinal(message.getBytes());
-					if (!Arrays.equals(messageMac, messageReceived.getMac())) {
-						System.out.println("Message was corrupted.");
-						return;
-					}
+
 					String decryptedText = EncryptionUtils.rsaDecrypt(message, this.privateKey);
 					String userName = decryptedText.split("-")[0];
 					String messageText = decryptedText.substring(userName.length()+1);

@@ -20,13 +20,14 @@ public class Message implements Serializable {
 	
 	
 	public Message(boolean isGroup, String message, PairingCipherSerParameter encapsulationPairHeader,
-			byte[] iv, Long groupId) {
+			byte[] iv, Long groupId, byte[] mac) {
 		super();
 		this.isGroup = isGroup;
 		this.message = message;
 		this.encapsulationPairHeader = encapsulationPairHeader;
 		this.ivBytes = iv;
 		this.groupId = groupId;
+		this.mac = mac;
 	}
 	
 	public Message(boolean isGroup, String message, byte[] mac) {

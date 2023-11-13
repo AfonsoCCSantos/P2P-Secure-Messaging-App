@@ -205,10 +205,12 @@ public class ClientStub{
 				} 
 				
 				//encrypt message
+				message = topic + ":" + this.user + "-" + message;
 				String encrypted = EncryptionUtils.aesEncrypt(message, k1, iv);
+				byte[] messageMac = mac.doFinal(encrypted.getBytes());
 				
 				for (ObjectOutputStream outToClient : socketOutstreamList) {
-					Message messageToSend = new Message(true, topic + ":" + this.user + "-" + encrypted, encapsulationPair.getHeader(), iv.getIV(), groupId);
+					Message messageToSend = new Message(true, encrypted, encapsulationPair.getHeader(), iv.getIV(), groupId, messageMac);
 					outToClient.writeObject(messageToSend);	
 				}
 			}
