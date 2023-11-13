@@ -146,6 +146,7 @@ public class ClientStub{
 			outToServer.writeObject(topic);
 			outToServer.writeObject(user);
 			List<String> list = (List<String>) inFromServer.readObject();
+			if (list == null) return -1;
 			List<ObjectOutputStream> socketOutstreamList = new ArrayList<>();
 			
 			accepterThread.setTopic(topic);

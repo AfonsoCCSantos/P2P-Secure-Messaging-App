@@ -119,7 +119,7 @@ public class Client {
 					resultCode = clientStub.talkToGroup(tokens[1]);
 					switch (resultCode) {
 						case -1:
-							System.out.println("NAO ENVIOU MENSAGEM.");	
+							System.out.println("The group does not exist.");	
 							break;
 						case 0:
 							showMenu();
