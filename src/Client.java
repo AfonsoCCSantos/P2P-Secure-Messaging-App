@@ -83,8 +83,15 @@ public class Client {
 				case "createGroup":
 					resultCode = clientStub.createGroup(tokens[1]);
 					switch (resultCode) {
-						case -1:
+						case -2:
 							System.out.println("This group already exists.");	
+							System.out.println();
+							System.out.println("Messages: ");
+							break;
+						case -1:
+							System.out.println("An error occurred while creating the group");
+							System.out.println();
+							System.out.println("Messages: ");
 							break;
 						case 0:
 							System.out.println("Group was created!");

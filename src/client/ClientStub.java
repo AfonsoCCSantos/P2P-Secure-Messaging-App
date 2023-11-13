@@ -207,11 +207,12 @@ public class ClientStub{
 			outToServer.writeObject(groupsIds);
 			
 			//receive code of operation
+			// -2 if group already existed; -1 other error
 			Long groupId = (Long) inFromServer.readObject();
-			boolean failed = groupId == -1;
+			boolean failed = groupId < 0;
 						
 			//return -1 if fail
-			if(failed) return -1;	
+			if(failed) return groupId.intValue();	
 			
 			insertGroup(groupId, topic);
 			

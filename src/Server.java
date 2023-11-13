@@ -63,7 +63,7 @@ public class Server {
 			statement.execute("DROP TABLE IF EXISTS groups");
 			statement.execute("CREATE TABLE groups ("
                     + "group_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + "group_name TEXT,"
+                    + "group_name TEXT UNIQUE,"
                     + "members TEXT)");
 		} catch (SQLException e) {
 			e.printStackTrace();

@@ -77,7 +77,7 @@ public class ServerSkel {
 		long opCode = insertNewGroup(topic, username);
 		try {
 			//tells user if it succeeded
-			Boolean failed = opCode == -1;
+			Boolean failed = opCode < 0;
 			out.writeObject(opCode);
 			
 			if (failed) return;
@@ -372,7 +372,7 @@ public class ServerSkel {
 	                return -1;
 	            }
 	        } catch (SQLException e) {
-	            e.printStackTrace();
+	        	return -2;
 	        }
         } catch (SQLException e) {
             e.printStackTrace();
