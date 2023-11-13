@@ -9,6 +9,7 @@ import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.cert.Certificate;
@@ -21,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
+import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -50,6 +52,7 @@ public class ClientStub{
 	private PairingKeySerParameter attributesKey;
 	private PairingKeySerParameter publicAttributesKey;
 	private HikariDataSource dataSource;
+	private static final SecureRandom rndGenerator = new SecureRandom();
 	
 	public ClientStub(String user, AcceptConnectionsThread accepterThread, Socket talkToServer,
 					  AssymetricEncryptionObjects assymEncObjects, HikariDataSource dataSource) {
@@ -118,29 +121,33 @@ public class ClientStub{
 			Socket socket = new Socket(ipPortTokens[0], Integer.parseInt(ipPortTokens[1]));
 			ObjectOutputStream outToClient = Utils.gOutputStream(socket);
 			
-			
 			//if we want to exchange something before the convo
 			//for example symmetric key for mac
-			outToClient.writeObject("benfica");
 			
-			
-			
+			//generate a secret key to use for MAC
+			byte[] skBytes = new byte[32];
+			rndGenerator.nextBytes(skBytes);
+			Mac mac = Mac.getInstance("HmacSHA256");
+			SecretKeySpec macKey = new SecretKeySpec(skBytes, "HmacSHA256");
+			mac.init(macKey);
+			outToClient.writeObject(macKey);
+				
 			System.out.println("--------------------------");
 			System.out.println("Chat with: " + username);
 			System.out.println("--------------------------");
 			while (true) {
 				String message = sc.nextLine();
+				message = this.user + "-" + message;
 				String encryptedMessage = EncryptionUtils.rsaEncrypt(message, userToTalkPK);
 				if (message.equals(":q")) {
 					accepterThread.setUsername(null);
 					return 0;					
 				} 
-				Message messageToSend = new Message(false, this.user + "-" + encryptedMessage, null, null, null);
-				outToClient.writeObject(messageToSend);
-//				outToClient.writeObject(false);	
-//				outToClient.writeObject(this.user + "-" + encryptedMessage);		
+				byte[] messageMac = mac.doFinal(encryptedMessage.getBytes());
+				Message messageToSend = new Message(false, encryptedMessage, messageMac);
+				outToClient.writeObject(messageToSend);		
 			}
-		} catch (IOException e) {
+		} catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
 			e.printStackTrace();
 		}
 		return 0;
@@ -181,6 +188,14 @@ public class ClientStub{
 			SecretKey k1 = new SecretKeySpec(Arrays.copyOfRange(sessionKey, 0, 16), "AES");
 			IvParameterSpec iv = EncryptionUtils.generateIv();
 			
+			byte[] skBytes = new byte[32];
+			rndGenerator.nextBytes(skBytes);
+			Mac mac = Mac.getInstance("HmacSHA256");
+			SecretKeySpec macKey = new SecretKeySpec(skBytes, "HmacSHA256");
+			mac.init(macKey);
+			for (ObjectOutputStream outToClient : socketOutstreamList) {
+				outToClient.writeObject(macKey);
+			}
 			
 			while (true) {
 				String message = sc.nextLine();
@@ -198,7 +213,7 @@ public class ClientStub{
 				}
 			}
 						
-		} catch (IOException | ClassNotFoundException e) {
+		} catch (IOException | ClassNotFoundException | NoSuchAlgorithmException | InvalidKeyException e) {
 			e.printStackTrace();
 		}
 		

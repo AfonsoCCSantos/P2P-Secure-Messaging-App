@@ -2,6 +2,8 @@ package client.threads;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.Socket;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.util.Arrays;
 
@@ -10,6 +12,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.crypto.InvalidCipherTextException;
 
+import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 
 import cn.edu.buaa.crypto.algebra.serparams.PairingCipherSerParameter;
@@ -37,13 +40,18 @@ public class TalkToThread extends Thread {
 		
 		//if you want to exchange something before the convo
 		//for example a symmetric key for the convo or mac
-		String a = null;
+		
+		SecretKeySpec keyMac = null;
+		Mac mac = null;
 		try {
-			a = (String) in.readObject();
-		} catch (ClassNotFoundException | IOException e) {
+			keyMac = (SecretKeySpec) in.readObject();
+			mac = Mac.getInstance("HmacSHA256");
+			mac.init(keyMac);
+		} catch (ClassNotFoundException | IOException | NoSuchAlgorithmException | InvalidKeyException e) {
 			e.printStackTrace();
+			System.out.println("Failure setting up message integrity verification");
+			return;
 		}
-		System.out.println(a);
 		
 		try {
 			while (true) {
@@ -73,11 +81,16 @@ public class TalkToThread extends Thread {
 				}
 				else {
 					//userName-mensagemEnviada
-					String userName = message.split("-")[0];
-					String text = message.substring(userName.length()+1);
-					String decryptedText = EncryptionUtils.rsaDecrypt(text, this.privateKey);
+					byte[] messageMac = mac.doFinal(message.getBytes());
+					if (!Arrays.equals(messageMac, messageReceived.getMac())) {
+						System.out.println("Message was corrupted.");
+						return;
+					}
+					String decryptedText = EncryptionUtils.rsaDecrypt(message, this.privateKey);
+					String userName = decryptedText.split("-")[0];
+					String messageText = decryptedText.substring(userName.length()+1);
 					if ((accepterThread.getTopic() == null && accepterThread.getUsername() == null) || (accepterThread.getUsername() != null && accepterThread.getUsername().equals(userName)))
-						System.out.println("(" + userName + ")" + " - " + decryptedText);
+						System.out.println("(" + userName + ")" + " - " + messageText);
 				}
 			}	
 		} catch (ClassNotFoundException | IOException | InvalidCipherTextException e) {
