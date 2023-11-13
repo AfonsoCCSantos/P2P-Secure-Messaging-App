@@ -17,6 +17,7 @@ public class Message implements Serializable {
 	private byte[] ivBytes;
 	private Long groupId;
 	
+	
 	public Message(boolean isGroup, String message, PairingCipherSerParameter encapsulationPairHeader,
 			byte[] iv, Long groupId) {
 		super();

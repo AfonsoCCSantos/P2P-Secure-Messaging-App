@@ -120,7 +120,8 @@ public class ClientStub{
 			
 			
 			//if we want to exchange something before the convo
-			//for example symmetric key
+			//for example symmetric key for mac
+			outToClient.writeObject("benfica");
 			
 			
 			

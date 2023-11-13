@@ -36,9 +36,14 @@ public class TalkToThread extends Thread {
 		
 		
 		//if you want to exchange something before the convo
-		//for example a symmetric key for the convo
-		
-		
+		//for example a symmetric key for the convo or mac
+		String a = null;
+		try {
+			a = (String) in.readObject();
+		} catch (ClassNotFoundException | IOException e) {
+			e.printStackTrace();
+		}
+		System.out.println(a);
 		
 		try {
 			while (true) {
