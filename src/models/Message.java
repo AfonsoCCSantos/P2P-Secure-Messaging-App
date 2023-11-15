@@ -16,24 +16,20 @@ public class Message implements Serializable {
 	private PairingCipherSerParameter encapsulationPairHeader;
 	private byte[] ivBytes;
 	private Long groupId;
-	private byte[] mac;
 	
 	
 	public Message(boolean isGroup, String message, PairingCipherSerParameter encapsulationPairHeader,
-			byte[] iv, Long groupId, byte[] mac) {
-		super();
+			byte[] iv, Long groupId) {
 		this.isGroup = isGroup;
 		this.message = message;
 		this.encapsulationPairHeader = encapsulationPairHeader;
 		this.ivBytes = iv;
 		this.groupId = groupId;
-		this.mac = mac;
 	}
 	
-	public Message(boolean isGroup, String message, byte[] mac) {
+	public Message(boolean isGroup, String message) {
 		this.isGroup = isGroup;
 		this.message = message;
-		this.mac = mac;
 	}
 	
 	public Long getGroupId() {
@@ -76,13 +72,5 @@ public class Message implements Serializable {
 
 	public void setIv(byte[] iv) {
 		this.ivBytes = iv;
-	}
-
-	public byte[] getMac() {
-		return mac;
-	}
-
-	public void setMac(byte[] mac) {
-		this.mac = mac;
 	}
 }

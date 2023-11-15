@@ -35,6 +35,7 @@ import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
 import cn.edu.buaa.crypto.encryption.abe.kpabe.KPABEEngine;
 import cn.edu.buaa.crypto.encryption.abe.kpabe.gpsw06a.KPABEGPSW06aEngine;
 import models.AssymetricEncryptionObjects;
+import models.AuthenticatedMessage;
 import models.Constants;
 import models.Message;
 import utils.EncryptionUtils;
@@ -137,15 +138,17 @@ public class ClientStub{
 			System.out.println("--------------------------");
 			while (true) {
 				String message = sc.nextLine();
-				message = this.user + "-" + message;
-				String encryptedMessage = EncryptionUtils.rsaEncrypt(message, userToTalkPK);
 				if (message.equals(":q")) {
 					accepterThread.setUsername(null);
 					return 0;					
 				} 
-				byte[] messageMac = mac.doFinal(encryptedMessage.getBytes());
-				Message messageToSend = new Message(false, encryptedMessage, messageMac);
-				outToClient.writeObject(messageToSend);		
+				message = this.user + "-" + message;
+				String encryptedMessage = EncryptionUtils.rsaEncrypt(message, userToTalkPK);
+				Message messageToSend = new Message(false, encryptedMessage);
+				byte[] messageAsBytes = Utils.serializeObject(messageToSend);
+				byte[] messageMac = mac.doFinal(messageAsBytes);
+				AuthenticatedMessage authenticatedMessage = new AuthenticatedMessage(messageToSend, messageMac);
+				outToClient.writeObject(authenticatedMessage);		
 			}
 		} catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
 			e.printStackTrace();
@@ -207,11 +210,13 @@ public class ClientStub{
 				//encrypt message
 				message = topic + ":" + this.user + "-" + message;
 				String encrypted = EncryptionUtils.aesEncrypt(message, k1, iv);
-				byte[] messageMac = mac.doFinal(encrypted.getBytes());
 				
 				for (ObjectOutputStream outToClient : socketOutstreamList) {
-					Message messageToSend = new Message(true, encrypted, encapsulationPair.getHeader(), iv.getIV(), groupId, messageMac);
-					outToClient.writeObject(messageToSend);	
+					Message messageToSend = new Message(true, encrypted, encapsulationPair.getHeader(), iv.getIV(), groupId);
+					byte[] messageAsBytes = Utils.serializeObject(messageToSend);
+					byte[] messageMac = mac.doFinal(messageAsBytes);
+					AuthenticatedMessage authenticatedMessage = new AuthenticatedMessage(messageToSend, messageMac);
+					outToClient.writeObject(authenticatedMessage);	
 				}
 			}
 						

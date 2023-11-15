@@ -18,6 +18,7 @@ import javax.crypto.SecretKey;
 import cn.edu.buaa.crypto.algebra.serparams.PairingCipherSerParameter;
 import cn.edu.buaa.crypto.encryption.abe.kpabe.KPABEEngine;
 import cn.edu.buaa.crypto.encryption.abe.kpabe.gpsw06a.KPABEGPSW06aEngine;
+import models.AuthenticatedMessage;
 import models.Message;
 import utils.EncryptionUtils;
 import utils.Utils;
@@ -55,13 +56,15 @@ public class TalkToThread extends Thread {
 		
 		try {
 			while (true) {
-				Message messageReceived = (Message) in.readObject();
-				String message = messageReceived.getMessage();
-				byte[] messageMac = mac.doFinal(message.getBytes());
-				if (!Arrays.equals(messageMac, messageReceived.getMac())) {
+				AuthenticatedMessage authMessageReceived = (AuthenticatedMessage) in.readObject();
+				Message messageReceived = authMessageReceived.getMessage();
+				byte[] messageAsBytes = Utils.serializeObject(messageReceived);
+				byte[] messageMac = mac.doFinal(messageAsBytes);
+				if (!Arrays.equals(messageMac, authMessageReceived.getMac())) {
 					System.out.println("Message was corrupted.");
 					return;
 				}
+				String message = messageReceived.getMessage();
 				//A mensagem tem metadata a indicar quem a enviou
 				if (messageReceived.isGroup()) {
 					//topic:userName-mensagemEnviada
