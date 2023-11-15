@@ -145,9 +145,7 @@ public class ClientStub{
 				message = this.user + "-" + message;
 				String encryptedMessage = EncryptionUtils.rsaEncrypt(message, userToTalkPK);
 				Message messageToSend = new Message(false, encryptedMessage);
-				byte[] messageAsBytes = Utils.serializeObject(messageToSend);
-				byte[] messageMac = mac.doFinal(messageAsBytes);
-				AuthenticatedMessage authenticatedMessage = new AuthenticatedMessage(messageToSend, messageMac);
+				AuthenticatedMessage authenticatedMessage = createAuthenticatedMessage(mac, messageToSend);
 				outToClient.writeObject(authenticatedMessage);		
 			}
 		} catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
@@ -213,9 +211,7 @@ public class ClientStub{
 				
 				for (ObjectOutputStream outToClient : socketOutstreamList) {
 					Message messageToSend = new Message(true, encrypted, encapsulationPair.getHeader(), iv.getIV(), groupId);
-					byte[] messageAsBytes = Utils.serializeObject(messageToSend);
-					byte[] messageMac = mac.doFinal(messageAsBytes);
-					AuthenticatedMessage authenticatedMessage = new AuthenticatedMessage(messageToSend, messageMac);
+					AuthenticatedMessage authenticatedMessage = createAuthenticatedMessage(mac, messageToSend);
 					outToClient.writeObject(authenticatedMessage);	
 				}
 			}
@@ -364,5 +360,12 @@ public class ClientStub{
 			e.printStackTrace();
 		}
 		return ipPort;
+	}
+	
+	private AuthenticatedMessage createAuthenticatedMessage(Mac mac, Message messageToSend) {
+		byte[] messageAsBytes = Utils.serializeObject(messageToSend);
+		byte[] messageMac = mac.doFinal(messageAsBytes);
+		AuthenticatedMessage authenticatedMessage = new AuthenticatedMessage(messageToSend, messageMac);
+		return authenticatedMessage;
 	}
 }
