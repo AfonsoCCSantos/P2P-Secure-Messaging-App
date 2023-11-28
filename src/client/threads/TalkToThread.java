@@ -5,6 +5,10 @@ import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Arrays;
 
 import javax.crypto.spec.IvParameterSpec;
@@ -20,6 +24,7 @@ import cn.edu.buaa.crypto.encryption.abe.kpabe.KPABEEngine;
 import cn.edu.buaa.crypto.encryption.abe.kpabe.gpsw06a.KPABEGPSW06aEngine;
 import models.AuthenticatedMessage;
 import models.Message;
+import utils.DatabaseUtils;
 import utils.EncryptionUtils;
 import utils.Utils;
 
@@ -37,7 +42,7 @@ public class TalkToThread extends Thread {
 	
 	public void run() {
 		ObjectInputStream in = Utils.gInputStream(socket);
-		
+		boolean alreadyCheckedDatabaseEntry = false;
 		
 		//if you want to exchange something before the convo
 		//for example a symmetric key for the convo or mac
@@ -56,6 +61,9 @@ public class TalkToThread extends Thread {
 		
 		try {
 			while (true) {
+				String text = null;
+				String conversationName = null;
+				String username = null;
 				AuthenticatedMessage authMessageReceived = (AuthenticatedMessage) in.readObject();
 				Message messageReceived = authMessageReceived.getMessage();
 				byte[] messageAsBytes = Utils.serializeObject(messageReceived);
@@ -80,25 +88,40 @@ public class TalkToThread extends Thread {
 					String decrypted = EncryptionUtils.aesDecrypt(message, k, iv);
 					
 					String[] tokens = decrypted.split(":");
-					String topic = tokens[0];
+					conversationName = tokens[0];
 					String userName = tokens[1].split("-")[0];
-					String text = decrypted.substring(topic.length()+userName.length()+2);
+					username = userName;
+					text = decrypted.substring(conversationName.length()+userName.length()+2);
 					
-					if ((accepterThread.getTopic() == null && accepterThread.getUsername() == null) || (accepterThread.getTopic() != null && accepterThread.getTopic().equals(topic)))
-						System.out.println("(" + topic +":" + userName + ")" + " - " + text);
+					if ((accepterThread.getTopic() == null && accepterThread.getUsername() == null) || (accepterThread.getTopic() != null && accepterThread.getTopic().equals(conversationName)))
+						System.out.println("(" + conversationName +":" + userName + ")" + " - " + text);
 				}
+				
 				else {
 					//userName-mensagemEnviada
-
 					String decryptedText = EncryptionUtils.rsaDecrypt(message, this.privateKey);
-					String userName = decryptedText.split("-")[0];
-					String messageText = decryptedText.substring(userName.length()+1);
-					if ((accepterThread.getTopic() == null && accepterThread.getUsername() == null) || (accepterThread.getUsername() != null && accepterThread.getUsername().equals(userName)))
-						System.out.println("(" + userName + ")" + " - " + messageText);
+					conversationName = decryptedText.split("-")[0];
+					username = conversationName;
+					text = decryptedText.substring(conversationName.length()+1);
+					if ((accepterThread.getTopic() == null && accepterThread.getUsername() == null) || (accepterThread.getUsername() != null && accepterThread.getUsername().equals(conversationName)))
+						System.out.println("(" + conversationName + ")" + " - " + text);
 				}
+				
+				if (!alreadyCheckedDatabaseEntry) {
+					DatabaseUtils.createEntryInConversations(conversationName, accepterThread.getDataSource());
+					alreadyCheckedDatabaseEntry = true;
+				}
+				
+				String messageToSave = username + "-" + text;
+				DatabaseUtils.registerMessageInConversations(conversationName, accepterThread.getDataSource(), messageToSave);
+				//Agora falta fazer DatabaseUtils.createEntryInConversations(conversationName, accepterThread.getDataSource().getConnection());
+				//quando se começa uma conversa com uma pessoa/grupo.
 			}	
 		} catch (ClassNotFoundException | IOException | InvalidCipherTextException e) {
 			//Do Nothing
 		}
 	}
+
+	
+	
 }

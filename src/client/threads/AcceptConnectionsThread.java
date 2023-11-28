@@ -4,6 +4,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.PrivateKey;
 
+import com.zaxxer.hikari.HikariDataSource;
+
 import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
 
 public class AcceptConnectionsThread extends Thread {
@@ -14,14 +16,24 @@ public class AcceptConnectionsThread extends Thread {
 	private PrivateKey privateKey;
 	private PairingKeySerParameter attributesKey;
 	private PairingKeySerParameter publicAttributesKey;
+	private HikariDataSource dataSource;
 	
-	public AcceptConnectionsThread(int port, PrivateKey privateKey) {
+	public AcceptConnectionsThread(int port, PrivateKey privateKey, HikariDataSource dataSource) {
 		this.port = port;	
 		this.privateKey = privateKey;
+		this.dataSource = dataSource;
 		this.username = null;
 		this.topic = null;
 	}
 	
+	public HikariDataSource getDataSource() {
+		return dataSource;
+	}
+
+	public void setDataSource(HikariDataSource dataSource) {
+		this.dataSource = dataSource;
+	}
+
 	public PairingKeySerParameter getAttributesKey() {
 		return attributesKey;
 	}

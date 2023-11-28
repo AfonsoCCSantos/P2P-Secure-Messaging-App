@@ -29,14 +29,8 @@ public class Server {
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl("jdbc:sqlite:serverFiles/serverDatabase.db");
 		HikariDataSource dataSource = new HikariDataSource(config);
-		Connection connection = null;
-		try {
-			connection = dataSource.getConnection();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
 		
-		createTables(connection);
+		createTables(dataSource);
 		
 		AttributeEncryptionObjects attributeEncryptionObjects = getAttributeKeys();
 		while (true) {
@@ -52,9 +46,10 @@ public class Server {
 		}
 	}
 	
-	private static void createTables(Connection connection) {
+	private static void createTables(HikariDataSource dataSource) {
 		Statement statement;
-		try {
+		
+		try (Connection connection = dataSource.getConnection()) {
 			statement = connection.createStatement();
 			statement.execute("DROP TABLE IF EXISTS users");
 			statement.execute("CREATE TABLE users ("

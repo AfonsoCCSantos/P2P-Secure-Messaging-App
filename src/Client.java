@@ -59,7 +59,7 @@ public class Client {
 		
 		showMenu();
 		Socket talkToServer = connectToServerSocket();
-		AcceptConnectionsThread accepterThread = new AcceptConnectionsThread(portNumber, assymEncryptionObjs.getPrivateKey());
+		AcceptConnectionsThread accepterThread = new AcceptConnectionsThread(portNumber, assymEncryptionObjs.getPrivateKey(), dataSource);
 		ClientStub clientStub = new ClientStub(username, accepterThread, talkToServer, assymEncryptionObjs, dataSource);
 		clientStub.login(username, ipAddress, portNumber);
 		accepterThread.start();
@@ -178,6 +178,10 @@ public class Client {
 			statement.execute("CREATE TABLE groups ("
                     + "group_id INTEGER PRIMARY KEY,"
                     + "group_name TEXT)");
+			statement.execute("DROP TABLE IF EXISTS conversations");
+			statement.execute("CREATE TABLE conversations ("
+                    + "conversation_name TEXT PRIMARY KEY,"
+                    + "conversation_messages TEXT)");
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}

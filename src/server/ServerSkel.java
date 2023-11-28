@@ -299,7 +299,6 @@ public class ServerSkel {
             String selectSql = "SELECT members FROM groups WHERE group_name = ?";
             try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
                 preparedStatement.setString(1, topic);
-
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
                     if (resultSet.next()) {
                         members = resultSet.getString("members");

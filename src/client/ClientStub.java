@@ -38,6 +38,7 @@ import models.AssymetricEncryptionObjects;
 import models.AuthenticatedMessage;
 import models.Constants;
 import models.Message;
+import utils.DatabaseUtils;
 import utils.EncryptionUtils;
 import utils.Utils;
 
@@ -136,17 +137,20 @@ public class ClientStub{
 			System.out.println("--------------------------");
 			System.out.println("Chat with: " + username);
 			System.out.println("--------------------------");
+			
+			DatabaseUtils.createEntryInConversations(username, dataSource);
 			while (true) {
-				String message = sc.nextLine();
-				if (message.equals(":q")) {
+				String typedMessage = sc.nextLine();
+				if (typedMessage.equals(":q")) {
 					accepterThread.setUsername(null);
 					return 0;					
 				} 
-				message = this.user + "-" + message;
+				String message = this.user + "-" + typedMessage;
 				String encryptedMessage = EncryptionUtils.rsaEncrypt(message, userToTalkPK);
 				Message messageToSend = new Message(false, encryptedMessage);
 				AuthenticatedMessage authenticatedMessage = createAuthenticatedMessage(mac, messageToSend);
-				outToClient.writeObject(authenticatedMessage);		
+				outToClient.writeObject(authenticatedMessage);	
+				DatabaseUtils.registerMessageInConversations(username, dataSource, message);
 			}
 		} catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
 			e.printStackTrace();
@@ -198,15 +202,16 @@ public class ClientStub{
 				outToClient.writeObject(macKey);
 			}
 			
+			DatabaseUtils.createEntryInConversations(topic, dataSource);
 			while (true) {
-				String message = sc.nextLine();
-				if (message.equals(":q")) {
+				String typedMessage = sc.nextLine();
+				if (typedMessage.equals(":q")) {
 					accepterThread.setTopic(null);
 					return 0;					
 				} 
 				
 				//encrypt message
-				message = topic + ":" + this.user + "-" + message;
+				String message = topic + ":" + this.user + "-" + typedMessage;
 				String encrypted = EncryptionUtils.aesEncrypt(message, k1, iv);
 				
 				for (ObjectOutputStream outToClient : socketOutstreamList) {
@@ -214,6 +219,7 @@ public class ClientStub{
 					AuthenticatedMessage authenticatedMessage = createAuthenticatedMessage(mac, messageToSend);
 					outToClient.writeObject(authenticatedMessage);	
 				}
+				DatabaseUtils.registerMessageInConversations(topic, dataSource, message);
 			}
 						
 		} catch (IOException | ClassNotFoundException | NoSuchAlgorithmException | InvalidKeyException e) {
