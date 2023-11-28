@@ -24,8 +24,10 @@ import cn.edu.buaa.crypto.encryption.abe.kpabe.KPABEEngine;
 import cn.edu.buaa.crypto.encryption.abe.kpabe.gpsw06a.KPABEGPSW06aEngine;
 import models.AuthenticatedMessage;
 import models.Message;
+import models.SSEObjects;
 import utils.DatabaseUtils;
 import utils.EncryptionUtils;
+import utils.SSEUtils;
 import utils.Utils;
 
 public class TalkToThread extends Thread {
@@ -33,11 +35,13 @@ public class TalkToThread extends Thread {
 	private Socket socket;
 	private AcceptConnectionsThread accepterThread;
 	private PrivateKey privateKey;
+	private SSEObjects sseObjects;
 	
-	public TalkToThread(Socket inSocket, AcceptConnectionsThread accepterThread, PrivateKey privateKey) {
+	public TalkToThread(Socket inSocket, AcceptConnectionsThread accepterThread, PrivateKey privateKey, SSEObjects sseObjects) {
 		this.socket = inSocket;
 		this.accepterThread = accepterThread;
 		this.privateKey = privateKey;
+		this.sseObjects = sseObjects;
 	}	
 	
 	public void run() {
@@ -95,6 +99,7 @@ public class TalkToThread extends Thread {
 					
 					if ((accepterThread.getTopic() == null && accepterThread.getUsername() == null) || (accepterThread.getTopic() != null && accepterThread.getTopic().equals(conversationName)))
 						System.out.println("(" + conversationName +":" + userName + ")" + " - " + text);
+					
 				}
 				
 				else {
@@ -114,8 +119,10 @@ public class TalkToThread extends Thread {
 				
 				String messageToSave = username + "-" + text;
 				DatabaseUtils.registerMessageInConversations(conversationName, accepterThread.getDataSource(), messageToSave);
-				//Agora falta fazer DatabaseUtils.createEntryInConversations(conversationName, accepterThread.getDataSource().getConnection());
-				//quando se começa uma conversa com uma pessoa/grupo.
+				for (String keyword : text.split(" ")) {
+					SSEUtils.update(keyword, username, sseObjects.getHmac(), sseObjects.getSk(), sseObjects.getAes(), sseObjects.getCounters()
+							, sseObjects.getIvSSE(), sseObjects.getIndex());
+				}
 			}	
 		} catch (ClassNotFoundException | IOException | InvalidCipherTextException e) {
 			//Do Nothing

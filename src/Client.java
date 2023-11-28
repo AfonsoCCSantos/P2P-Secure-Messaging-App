@@ -14,7 +14,9 @@ import java.security.cert.CertificateException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -76,6 +78,7 @@ public class Client {
 							System.out.println("This user does not exist.");	
 							break;
 						case 0:
+							System.out.println();
 							showMenu();
 							break;
 					}
@@ -122,10 +125,20 @@ public class Client {
 							System.out.println("The group does not exist.");	
 							break;
 						case 0:
+							System.out.println();
 							showMenu();
 							break;
 					}
-					break;	
+					break;
+				case "searchKeyword":
+					Set<String> messages = clientStub.searchKeyword(tokens[1]);
+					if (messages != null) {
+						for (String message : messages) {
+							System.out.println(message);
+						}
+					}
+					System.out.println();
+					break;
 			}
 		}
 	} 
@@ -140,6 +153,7 @@ public class Client {
 		System.out.println("talkToGroup <topic> - Allows you to send messages to the group with the given topic");
 		System.out.println("createGroup <topic> - Allows you to create a new group with the given topic");
 		System.out.println("joinGroup <topic> - Allows you to join the group with the given topic");
+		System.out.println("searchKeyword <keyword> - Allows you to retrieve the messages where the given keyword appears");
 		System.out.println();
 		System.out.println("Messages: ");
     }

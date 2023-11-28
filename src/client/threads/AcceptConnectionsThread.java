@@ -7,6 +7,7 @@ import java.security.PrivateKey;
 import com.zaxxer.hikari.HikariDataSource;
 
 import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
+import models.SSEObjects;
 
 public class AcceptConnectionsThread extends Thread {
 	
@@ -17,6 +18,7 @@ public class AcceptConnectionsThread extends Thread {
 	private PairingKeySerParameter attributesKey;
 	private PairingKeySerParameter publicAttributesKey;
 	private HikariDataSource dataSource;
+	private SSEObjects sseObjects;
 	
 	public AcceptConnectionsThread(int port, PrivateKey privateKey, HikariDataSource dataSource) {
 		this.port = port;	
@@ -66,6 +68,14 @@ public class AcceptConnectionsThread extends Thread {
 		return topic;
 	}
 	
+	public SSEObjects getSseObjects() {
+		return sseObjects;
+	}
+
+	public void setSseObjects(SSEObjects sseObjects) {
+		this.sseObjects = sseObjects;
+	}
+
 	public void run() {
 		ServerSocket serverSocket = null;
 		try {
@@ -77,7 +87,7 @@ public class AcceptConnectionsThread extends Thread {
 			Socket socket;
 			try {
 				socket = serverSocket.accept();
-				TalkToThread newTalkToThread = new TalkToThread(socket, this, privateKey);
+				TalkToThread newTalkToThread = new TalkToThread(socket, this, privateKey, sseObjects);
 				newTalkToThread.start();
 			} catch (IOException e) {
 				e.printStackTrace();

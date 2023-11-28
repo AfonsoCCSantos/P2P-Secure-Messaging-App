@@ -19,9 +19,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
+import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
@@ -29,6 +33,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import com.zaxxer.hikari.HikariDataSource;
 
+import utils.models.ByteArray;
 import client.threads.AcceptConnectionsThread;
 import cn.edu.buaa.crypto.algebra.serparams.PairingKeyEncapsulationSerPair;
 import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
@@ -38,11 +43,20 @@ import models.AssymetricEncryptionObjects;
 import models.AuthenticatedMessage;
 import models.Constants;
 import models.Message;
+import models.SSEObjects;
 import utils.DatabaseUtils;
 import utils.EncryptionUtils;
+import utils.SSEUtils;
 import utils.Utils;
 
 public class ClientStub{
+	
+	private static final String hmac_alg = "HmacSHA1";
+	private static final String cipher_alg = "AES";
+	private static final SecureRandom rndGenerator = new SecureRandom();
+	private static Mac hmac;
+	private static Cipher aes;
+	private static IvParameterSpec ivSSE;	//fixed iv for simplicity
 	
 	private String user;
 	private AcceptConnectionsThread accepterThread;
@@ -54,7 +68,10 @@ public class ClientStub{
 	private PairingKeySerParameter attributesKey;
 	private PairingKeySerParameter publicAttributesKey;
 	private HikariDataSource dataSource;
-	private static final SecureRandom rndGenerator = new SecureRandom();
+	//For searchable encryption
+	private HashMap<String,Integer> counters;
+	private SecretKeySpec sk;
+	private Map<ByteArray,ByteArray> index;
 	
 	public ClientStub(String user, AcceptConnectionsThread accepterThread, Socket talkToServer,
 					  AssymetricEncryptionObjects assymEncObjects, HikariDataSource dataSource) {
@@ -66,6 +83,16 @@ public class ClientStub{
 		this.privateKey = assymEncObjects.getPrivateKey();
 		this.certificate = assymEncObjects.getCertificate();
 		this.dataSource = dataSource;
+		//For searchable encryption
+		byte[] sk_bytes = new byte[20];
+		byte[] iv_bytes = new byte[16];
+		rndGenerator.nextBytes(sk_bytes);
+		rndGenerator.nextBytes(iv_bytes);
+		sk = new SecretKeySpec(sk_bytes, hmac_alg);
+		ivSSE = new IvParameterSpec(iv_bytes);
+		counters = new HashMap<>(100);
+		index = new HashMap<ByteArray,ByteArray>(1000);
+		this.accepterThread.setSseObjects(new SSEObjects(ivSSE, hmac, aes, counters, sk, index));
 	}
 	
 	public void login(String username, String ipAddress, int portNumber) {
@@ -151,6 +178,9 @@ public class ClientStub{
 				AuthenticatedMessage authenticatedMessage = createAuthenticatedMessage(mac, messageToSend);
 				outToClient.writeObject(authenticatedMessage);	
 				DatabaseUtils.registerMessageInConversations(username, dataSource, message);
+				for (String keyword : typedMessage.split(" ")) {
+					SSEUtils.update(keyword, username, hmac, sk, aes, counters, ivSSE, index);
+				}
 			}
 		} catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
 			e.printStackTrace();
@@ -219,7 +249,11 @@ public class ClientStub{
 					AuthenticatedMessage authenticatedMessage = createAuthenticatedMessage(mac, messageToSend);
 					outToClient.writeObject(authenticatedMessage);	
 				}
-				DatabaseUtils.registerMessageInConversations(topic, dataSource, message);
+				DatabaseUtils.registerMessageInConversations(topic, dataSource, this.user + "-" + typedMessage);
+				for (String keyword : typedMessage.split(" ")) {
+					System.out.println(typedMessage);
+					SSEUtils.update(keyword, topic, hmac, sk, aes, counters, ivSSE, index);
+				}
 			}
 						
 		} catch (IOException | ClassNotFoundException | NoSuchAlgorithmException | InvalidKeyException e) {
@@ -366,6 +400,32 @@ public class ClientStub{
 			e.printStackTrace();
 		}
 		return ipPort;
+	}
+	
+	public Set<String> searchKeyword(String keyword) {
+		Set<String> docsWhereKeywordAppears = SSEUtils.search(keyword, hmac, aes, sk, ivSSE, index);
+		//Here we have the documents where the keywords appear, we will have to select the messages saved for that document
+		//and check what messages have this keyword inside.
+		if (docsWhereKeywordAppears == null) return docsWhereKeywordAppears;
+//		for (String document : docsWhereKeywordAppears) {
+//			try (Connection connection = dataSource.getConnection()) {
+//	            String selectSql = "SELECT conversation_messages FROM conversations WHERE conversation_name = ?";
+//	            try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
+//	            	preparedStatement.setString(1, document);
+//	            	String messagesOfConvo = null;
+//	                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+//	                	if (resultSet.next()) {
+//	                		messagesOfConvo = resultSet.getString("conversation_messages");
+//	                		System.out.println(messagesOfConvo);
+//	                    } 
+//	                }
+//	            }
+//	        } catch (SQLException e) {
+//	            e.printStackTrace();
+//	        }
+//		}
+		
+		return docsWhereKeywordAppears;
 	}
 	
 	private AuthenticatedMessage createAuthenticatedMessage(Mac mac, Message messageToSend) {
