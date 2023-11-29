@@ -131,11 +131,13 @@ public class Client {
 					}
 					break;
 				case "searchKeyword":
-					Set<String> messages = clientStub.searchKeyword(tokens[1]);
-					if (messages != null) {
-						for (String message : messages) {
-							System.out.println(message);
-						}
+					String toDisplay = clientStub.searchKeyword(tokens[1]);
+					if (toDisplay != null) {
+						System.out.println("Results: ");
+						System.out.println(toDisplay);
+					}
+					else {
+						System.out.println("No results found. ");
 					}
 					System.out.println();
 					break;

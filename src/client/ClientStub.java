@@ -404,30 +404,37 @@ public class ClientStub{
 		return ipPort;
 	}
 	
-	public Set<String> searchKeyword(String keyword) {
+	public String searchKeyword(String keyword) {
 		Set<String> docsWhereKeywordAppears = SSEUtils.search(keyword, sseObjects);
+		StringBuilder sb = new StringBuilder(); //To build the message that will appears on the screen
+		sb.append("\n");
 		//Here we have the documents where the keywords appear, we will have to select the messages saved for that document
 		//and check what messages have this keyword inside.
-		if (docsWhereKeywordAppears == null) return docsWhereKeywordAppears;
-//		for (String document : docsWhereKeywordAppears) {
-//			try (Connection connection = dataSource.getConnection()) {
-//	            String selectSql = "SELECT conversation_messages FROM conversations WHERE conversation_name = ?";
-//	            try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
-//	            	preparedStatement.setString(1, document);
-//	            	String messagesOfConvo = null;
-//	                try (ResultSet resultSet = preparedStatement.executeQuery()) {
-//	                	if (resultSet.next()) {
-//	                		messagesOfConvo = resultSet.getString("conversation_messages");
-//	                		System.out.println(messagesOfConvo);
-//	                    } 
-//	                }
-//	            }
-//	        } catch (SQLException e) {
-//	            e.printStackTrace();
-//	        }
-//		}
-		
-		return docsWhereKeywordAppears;
+		if (docsWhereKeywordAppears == null) return null;
+		try (Connection connection = dataSource.getConnection()) {
+			for (String document : docsWhereKeywordAppears) {
+				sb.append("Results in conversation '" + document + "':\n");
+				String selectSql = "SELECT conversation_messages FROM conversations WHERE conversation_name = ?";
+	            try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
+	            	preparedStatement.setString(1, document);
+	            	String messagesOfConvo = null;
+	                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+	                	if (resultSet.next()) {
+	                		messagesOfConvo = resultSet.getString("conversation_messages");
+	                		String[] messagesInSeparate = messagesOfConvo.split(";");
+	                		for (String message : messagesInSeparate) {
+	                			if (message.contains(keyword)) 
+	                				sb.append("\t" + message + "\n");
+	                		}
+	                    } 
+	                }
+	            }
+	            sb.append("\n");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return sb.toString();
 	}
 	
 	private AuthenticatedMessage createAuthenticatedMessage(Mac mac, Message messageToSend) {
