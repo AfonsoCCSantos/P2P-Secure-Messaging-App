@@ -13,17 +13,13 @@ import utils.models.ByteArray;
 public class SSEObjects {
 	
 	private IvParameterSpec ivSSE;
-	private Mac hmac;
-	private Cipher aes;
 	private HashMap<String,Integer> counters;
 	private SecretKeySpec sk;
 	private Map<ByteArray,ByteArray> index;
 	
-	public SSEObjects(IvParameterSpec ivSSE, Mac hmac, Cipher aes, HashMap<String, Integer> counters, SecretKeySpec sk,
+	public SSEObjects(IvParameterSpec ivSSE, HashMap<String, Integer> counters, SecretKeySpec sk,
 			Map<ByteArray, ByteArray> index) {
 		this.ivSSE = ivSSE;
-		this.hmac = hmac;
-		this.aes = aes;
 		this.counters = counters;
 		this.sk = sk;
 		this.index = index;
@@ -35,22 +31,6 @@ public class SSEObjects {
 
 	public void setIvSSE(IvParameterSpec ivSSE) {
 		this.ivSSE = ivSSE;
-	}
-
-	public Mac getHmac() {
-		return hmac;
-	}
-
-	public void setHmac(Mac hmac) {
-		this.hmac = hmac;
-	}
-
-	public Cipher getAes() {
-		return aes;
-	}
-
-	public void setAes(Cipher aes) {
-		this.aes = aes;
 	}
 
 	public HashMap<String, Integer> getCounters() {

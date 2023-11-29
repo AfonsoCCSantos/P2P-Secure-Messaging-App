@@ -72,6 +72,7 @@ public class ClientStub{
 	private HashMap<String,Integer> counters;
 	private SecretKeySpec sk;
 	private Map<ByteArray,ByteArray> index;
+	private SSEObjects sseObjects;
 	
 	public ClientStub(String user, AcceptConnectionsThread accepterThread, Socket talkToServer,
 					  AssymetricEncryptionObjects assymEncObjects, HikariDataSource dataSource) {
@@ -92,7 +93,8 @@ public class ClientStub{
 		ivSSE = new IvParameterSpec(iv_bytes);
 		counters = new HashMap<>(100);
 		index = new HashMap<ByteArray,ByteArray>(1000);
-		this.accepterThread.setSseObjects(new SSEObjects(ivSSE, hmac, aes, counters, sk, index));
+		sseObjects = new SSEObjects(ivSSE, counters, sk, index);
+		this.accepterThread.setSseObjects(sseObjects);
 	}
 	
 	public void login(String username, String ipAddress, int portNumber) {
@@ -179,7 +181,7 @@ public class ClientStub{
 				outToClient.writeObject(authenticatedMessage);	
 				DatabaseUtils.registerMessageInConversations(username, dataSource, message);
 				for (String keyword : typedMessage.split(" ")) {
-					SSEUtils.update(keyword, username, hmac, sk, aes, counters, ivSSE, index);
+					SSEUtils.update(keyword, username, sseObjects);
 				}
 			}
 		} catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
@@ -252,7 +254,7 @@ public class ClientStub{
 				DatabaseUtils.registerMessageInConversations(topic, dataSource, this.user + "-" + typedMessage);
 				for (String keyword : typedMessage.split(" ")) {
 					System.out.println(typedMessage);
-					SSEUtils.update(keyword, topic, hmac, sk, aes, counters, ivSSE, index);
+					SSEUtils.update(keyword, topic, sseObjects);
 				}
 			}
 						
@@ -403,7 +405,7 @@ public class ClientStub{
 	}
 	
 	public Set<String> searchKeyword(String keyword) {
-		Set<String> docsWhereKeywordAppears = SSEUtils.search(keyword, hmac, aes, sk, ivSSE, index);
+		Set<String> docsWhereKeywordAppears = SSEUtils.search(keyword, sseObjects);
 		//Here we have the documents where the keywords appear, we will have to select the messages saved for that document
 		//and check what messages have this keyword inside.
 		if (docsWhereKeywordAppears == null) return docsWhereKeywordAppears;

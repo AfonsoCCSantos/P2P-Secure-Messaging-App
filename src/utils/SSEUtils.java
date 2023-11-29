@@ -20,6 +20,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import models.SSEObjects;
 import utils.models.ByteArray;
 
 public class SSEUtils {
@@ -27,15 +28,14 @@ public class SSEUtils {
 	private static final String hmac_alg = "HmacSHA1";
 	private static final String cipher_alg = "AES";
 	
-	public static void update(String keyword, String documentName, Mac hmac, SecretKeySpec sk, 
-					   Cipher aes, HashMap<String,Integer> counters, IvParameterSpec iv, Map<ByteArray,ByteArray> index) {
+	public static void update(String keyword, String documentName, SSEObjects sseObjects) {
 		try {
-			hmac = Mac.getInstance(hmac_alg);
-			aes = Cipher.getInstance("AES/CBC/PKCS5Padding");
+			Mac hmac = Mac.getInstance(hmac_alg);
+			Cipher aes = Cipher.getInstance("AES/CBC/PKCS5Padding");
 			//generate keys k1 and k2 from keyword and sk by using a PRF
 			byte[] w1 = keyword.concat("1").getBytes();
 			byte[] w2 = keyword.concat("2").getBytes();
-			hmac.init(sk);
+			hmac.init(sseObjects.getSk());
 			byte[] k1Bytes = hmac.doFinal(w1);
 			byte[] k2Bytes = hmac.doFinal(w2);
 			byte[] k2Bytes16 = Arrays.copyOf(k2Bytes, 16);
@@ -43,7 +43,7 @@ public class SSEUtils {
 			SecretKeySpec key2 = new SecretKeySpec(k2Bytes16, cipher_alg);
 			
 			//get the counter c for keyword from counters, or set it at 0 if not found
-			Integer counter = counters.get(keyword);
+			Integer counter = sseObjects.getCounters().get(keyword);
 			if (counter == null) counter = 0;
 			BigInteger c = BigInteger.valueOf(counter);
 			
@@ -52,29 +52,28 @@ public class SSEUtils {
 			ByteArray indexLabelL = new ByteArray(hmac.doFinal(c.toByteArray()));
 			
 			//calculate the index value d through a symmetric-key cipher and using k2 as key and docId as plaintext
-			aes.init(Cipher.ENCRYPT_MODE, key2, iv);
+			aes.init(Cipher.ENCRYPT_MODE, key2, sseObjects.getIvSSE());
 			ByteArray indexValueD = new ByteArray(aes.doFinal(documentName.getBytes()));
 			
 			//send l and d to update the index
-			index.put(indexLabelL, indexValueD);
+			sseObjects.getIndex().put(indexLabelL, indexValueD);
 			
 			//increment counter c and update it in counters
-			counters.put(keyword, ++counter);
+			sseObjects.getCounters().put(keyword, ++counter);
 		} catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
-	public static Set<String> search(String keyword, Mac hmac, Cipher aes, SecretKeySpec sk, IvParameterSpec iv,
-							  Map<ByteArray,ByteArray> index) {
+	public static Set<String> search(String keyword, SSEObjects sseObjects) {
 		Set<String> results = null;
 		try {
-			hmac = Mac.getInstance(hmac_alg);
-			aes = Cipher.getInstance("AES/CBC/PKCS5Padding");
+			Mac hmac = Mac.getInstance(hmac_alg);
+			Cipher aes = Cipher.getInstance("AES/CBC/PKCS5Padding");
 			byte[] w1 = keyword.concat("1").getBytes();
 			byte[] w2 = keyword.concat("2").getBytes();
-			hmac.init(sk);
+			hmac.init(sseObjects.getSk());
 			byte[] k1Bytes = hmac.doFinal(w1);
 			byte[] k2Bytes = hmac.doFinal(w2);
 			
@@ -94,9 +93,9 @@ public class SSEUtils {
 			//repeat
 			results = new HashSet<String>();
 			while (true) {
-				ByteArray val = index.get(indexLabel);
+				ByteArray val = sseObjects.getIndex().get(indexLabel);
 				if (val == null) break;
-				aes.init(Cipher.DECRYPT_MODE, key2, iv);
+				aes.init(Cipher.DECRYPT_MODE, key2, sseObjects.getIvSSE());
 				byte[] decrypted = aes.doFinal(val.getArr());
 				results.add(new String(decrypted));
 				c = c.add(BigInteger.valueOf(1));

@@ -120,8 +120,7 @@ public class TalkToThread extends Thread {
 				String messageToSave = username + "-" + text;
 				DatabaseUtils.registerMessageInConversations(conversationName, accepterThread.getDataSource(), messageToSave);
 				for (String keyword : text.split(" ")) {
-					SSEUtils.update(keyword, username, sseObjects.getHmac(), sseObjects.getSk(), sseObjects.getAes(), sseObjects.getCounters()
-							, sseObjects.getIvSSE(), sseObjects.getIndex());
+					SSEUtils.update(keyword, conversationName, sseObjects);
 				}
 			}	
 		} catch (ClassNotFoundException | IOException | InvalidCipherTextException e) {
