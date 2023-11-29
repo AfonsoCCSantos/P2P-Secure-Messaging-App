@@ -40,10 +40,9 @@ import utils.models.ByteArray;
 public class Client {
 	
 	private static final int SERVER_PORT_NUMBER = 6789;
-	private static final String PATH_TO_SSEOBJECTS = "serverFiles/sseObjects.txt";
 	private static final String hmac_alg = "HmacSHA1";
 	private static final SecureRandom rndGenerator = new SecureRandom();
-	private static IvParameterSpec ivSSE;	//fixed iv for simplicity
+	private static String pathToSSEObjects;
 	
 	public static void main(String[] args) {
 		Scanner inputReader = new Scanner(System.in);
@@ -57,6 +56,8 @@ public class Client {
 			System.err.println("Your username can not contain the - character");
 			System.exit(-1);
 		}
+		
+		pathToSSEObjects = username + "/sseObjects.txt";
 		
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl("jdbc:sqlite:" + username + "/client.db");
@@ -79,10 +80,12 @@ public class Client {
 		AcceptConnectionsThread accepterThread = new AcceptConnectionsThread(portNumber, assymEncryptionObjs.getPrivateKey(), dataSource);
 		//For searchable encryption------------------------------------------------------
 		//First check if there is already a file with the necessary objects.
-		Path path = Paths.get(PATH_TO_SSEOBJECTS);
+		Path path = Paths.get(pathToSSEObjects);
 		SSEObjects sseObjects = null;
 		if (Files.exists(path)) {
-			sseObjects = Utils.deserializeSSEObjectFromFile(PATH_TO_SSEOBJECTS);
+			System.out.println("aqui");
+			sseObjects = Utils.deserializeSSEObjectFromFile(pathToSSEObjects);
+			System.out.println(sseObjects);
 		}
 		else {
 			byte[] sk_bytes = new byte[20];
@@ -90,10 +93,10 @@ public class Client {
 			rndGenerator.nextBytes(sk_bytes);
 			rndGenerator.nextBytes(iv_bytes);
 			SecretKeySpec sk = new SecretKeySpec(sk_bytes, hmac_alg);
-			ivSSE = new IvParameterSpec(iv_bytes);
 			HashMap<String,Integer> counters = new HashMap<>(100);
 			Map<ByteArray,ByteArray> index = new HashMap<ByteArray,ByteArray>(1000);
-			sseObjects = new SSEObjects(ivSSE, counters, sk, index);
+			sseObjects = new SSEObjects(iv_bytes, counters, sk, index);
+			Utils.serializeSSEObjectToFile(sseObjects, pathToSSEObjects);
 		}
 		ClientStub clientStub = new ClientStub(username, accepterThread, talkToServer, assymEncryptionObjs, dataSource, sseObjects);
 		clientStub.login(username, ipAddress, portNumber);
@@ -174,6 +177,11 @@ public class Client {
 					}
 					System.out.println();
 					break;
+				case "quit":
+					Utils.serializeSSEObjectToFile(sseObjects, pathToSSEObjects);
+					System.out.println("Bye!");
+					System.exit(0);
+					break;
 			}
 		}
 	} 
@@ -189,6 +197,7 @@ public class Client {
 		System.out.println("createGroup <topic> - Allows you to create a new group with the given topic");
 		System.out.println("joinGroup <topic> - Allows you to join the group with the given topic");
 		System.out.println("searchKeyword <keyword> - Allows you to retrieve the messages where the given keyword appears");
+		System.out.println("quit - Safely quits the application");
 		System.out.println();
 		System.out.println("Messages: ");
     }
@@ -223,14 +232,16 @@ public class Client {
 		Statement statement;
 		try {
 			statement = connection.createStatement();
-			statement.execute("DROP TABLE IF EXISTS groups");
-			statement.execute("CREATE TABLE groups ("
-                    + "group_id INTEGER PRIMARY KEY,"
-                    + "group_name TEXT)");
-			statement.execute("DROP TABLE IF EXISTS conversations");
-			statement.execute("CREATE TABLE conversations ("
-                    + "conversation_name TEXT PRIMARY KEY,"
-                    + "conversation_messages TEXT)");
+			if (!Utils.tableExists(connection, "groups")) {
+                statement.execute("CREATE TABLE groups ("
+                        + "group_id INTEGER PRIMARY KEY,"
+                        + "group_name TEXT)");
+            }
+            if (!Utils.tableExists(connection, "conversations")) {
+            	statement.execute("CREATE TABLE conversations ("
+                        + "conversation_name TEXT PRIMARY KEY,"
+                        + "conversation_messages TEXT)");
+            }
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}

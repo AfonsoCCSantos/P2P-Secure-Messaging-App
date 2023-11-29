@@ -11,6 +11,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Random;
 
 import models.Message;
@@ -26,17 +30,6 @@ public class Utils {
 	}
 	
 	public static String getIpAddress() {
-//		URL whatismyip = null;
-//		String ip = null;
-//		try {
-//			whatismyip = new URL("http://checkip.amazonaws.com");
-//			BufferedReader in = new BufferedReader(new InputStreamReader(whatismyip.openStream()));
-//	        ip = in.readLine();
-//	        in.close();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//		return ip;
 		return "127.0.0.1";
 	}
 	
@@ -94,7 +87,15 @@ public class Utils {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath))) {
             return (SSEObjects) ois.readObject();
         } catch (IOException | ClassNotFoundException e) {
+        	e.printStackTrace();
             return null;
         }
+    }
+	
+	public static boolean tableExists(Connection connection, String tableName) throws SQLException {
+        DatabaseMetaData metaData = connection.getMetaData();
+        ResultSet resultSet = metaData.getTables(null, null, tableName, null);
+
+        return resultSet.next();
     }
 }

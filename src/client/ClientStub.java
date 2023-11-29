@@ -236,7 +236,6 @@ public class ClientStub{
 				}
 				DatabaseUtils.registerMessageInConversations(topic, dataSource, this.user + "-" + typedMessage);
 				for (String keyword : typedMessage.split(" ")) {
-					System.out.println(typedMessage);
 					SSEUtils.update(keyword, topic, sseObjects);
 				}
 			}

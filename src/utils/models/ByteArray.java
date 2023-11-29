@@ -1,9 +1,11 @@
 package utils.models;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
-public class ByteArray {
+public class ByteArray implements Serializable {
 	
+	private static final long serialVersionUID = 1L;
 	private byte[] arr;
 
 	public ByteArray(byte[] array) {

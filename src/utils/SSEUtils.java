@@ -52,7 +52,8 @@ public class SSEUtils {
 			ByteArray indexLabelL = new ByteArray(hmac.doFinal(c.toByteArray()));
 			
 			//calculate the index value d through a symmetric-key cipher and using k2 as key and docId as plaintext
-			aes.init(Cipher.ENCRYPT_MODE, key2, sseObjects.getIvSSE());
+			IvParameterSpec ivSSE = new IvParameterSpec(sseObjects.getBytesIvSSE());
+			aes.init(Cipher.ENCRYPT_MODE, key2, ivSSE);
 			ByteArray indexValueD = new ByteArray(aes.doFinal(documentName.getBytes()));
 			
 			//send l and d to update the index
@@ -92,10 +93,11 @@ public class SSEUtils {
 			//add decrypted docId to list of results and increment counter
 			//repeat
 			results = new HashSet<String>();
+			IvParameterSpec ivSSE = new IvParameterSpec(sseObjects.getBytesIvSSE());
 			while (true) {
 				ByteArray val = sseObjects.getIndex().get(indexLabel);
 				if (val == null) break;
-				aes.init(Cipher.DECRYPT_MODE, key2, sseObjects.getIvSSE());
+				aes.init(Cipher.DECRYPT_MODE, key2, ivSSE);
 				byte[] decrypted = aes.doFinal(val.getArr());
 				results.add(new String(decrypted));
 				c = c.add(BigInteger.valueOf(1));

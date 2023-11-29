@@ -51,15 +51,17 @@ public class Server {
 		
 		try (Connection connection = dataSource.getConnection()) {
 			statement = connection.createStatement();
-			statement.execute("DROP TABLE IF EXISTS users");
-			statement.execute("CREATE TABLE users ("
-                    + "username TEXT PRIMARY KEY,"
-                    + "ip_port TEXT)");
-			statement.execute("DROP TABLE IF EXISTS groups");
-			statement.execute("CREATE TABLE groups ("
-                    + "group_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + "group_name TEXT UNIQUE,"
-                    + "members TEXT)");
+			if (!Utils.tableExists(connection, "users")) {
+                statement.execute("CREATE TABLE users ("
+                        + "username TEXT PRIMARY KEY,"
+                        + "ip_port TEXT)");
+            }
+            if (!Utils.tableExists(connection, "groups")) {
+                statement.execute("CREATE TABLE groups ("
+                        + "group_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                        + "group_name TEXT UNIQUE,"
+                        + "members TEXT)");
+            }
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}

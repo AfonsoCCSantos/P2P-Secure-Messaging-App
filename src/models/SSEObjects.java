@@ -1,5 +1,6 @@
 package models;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,27 +11,28 @@ import javax.crypto.spec.SecretKeySpec;
 
 import utils.models.ByteArray;
 
-public class SSEObjects {
+public class SSEObjects implements Serializable {
 	
-	private IvParameterSpec ivSSE;
+	private static final long serialVersionUID = 1L;
+	private byte[] bytesIvSSE;
 	private HashMap<String,Integer> counters;
 	private SecretKeySpec sk;
 	private Map<ByteArray,ByteArray> index;
 	
-	public SSEObjects(IvParameterSpec ivSSE, HashMap<String, Integer> counters, SecretKeySpec sk,
+	public SSEObjects(byte[] bytesIvSSE, HashMap<String, Integer> counters, SecretKeySpec sk,
 			Map<ByteArray, ByteArray> index) {
-		this.ivSSE = ivSSE;
+		this.bytesIvSSE = bytesIvSSE;
 		this.counters = counters;
 		this.sk = sk;
 		this.index = index;
 	}
 
-	public IvParameterSpec getIvSSE() {
-		return ivSSE;
+	public byte[] getBytesIvSSE() {
+		return bytesIvSSE;
 	}
 
-	public void setIvSSE(IvParameterSpec ivSSE) {
-		this.ivSSE = ivSSE;
+	public void setBytesIvSSE(byte[] bytesIvSSE) {
+		this.bytesIvSSE = bytesIvSSE;
 	}
 
 	public HashMap<String, Integer> getCounters() {
