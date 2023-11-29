@@ -51,49 +51,32 @@ import utils.Utils;
 
 public class ClientStub{
 	
-	private static final String hmac_alg = "HmacSHA1";
-	private static final String cipher_alg = "AES";
 	private static final SecureRandom rndGenerator = new SecureRandom();
-	private static Mac hmac;
-	private static Cipher aes;
-	private static IvParameterSpec ivSSE;	//fixed iv for simplicity
 	
 	private String user;
 	private AcceptConnectionsThread accepterThread;
 	private ObjectInputStream inFromServer;
 	private ObjectOutputStream outToServer;
-	private KeyStore keyStore;
 	private PrivateKey privateKey;
 	private Certificate certificate;
 	private PairingKeySerParameter attributesKey;
 	private PairingKeySerParameter publicAttributesKey;
 	private HikariDataSource dataSource;
 	//For searchable encryption
-	private HashMap<String,Integer> counters;
-	private SecretKeySpec sk;
-	private Map<ByteArray,ByteArray> index;
 	private SSEObjects sseObjects;
 	
 	public ClientStub(String user, AcceptConnectionsThread accepterThread, Socket talkToServer,
-					  AssymetricEncryptionObjects assymEncObjects, HikariDataSource dataSource) {
+					  AssymetricEncryptionObjects assymEncObjects, HikariDataSource dataSource,
+					  SSEObjects sseObjects) {
 		this.user = user;
 		this.accepterThread = accepterThread;
 		this.outToServer = Utils.gOutputStream(talkToServer);
 		this.inFromServer = Utils.gInputStream(talkToServer);
-		this.keyStore = assymEncObjects.getKeystore();
 		this.privateKey = assymEncObjects.getPrivateKey();
 		this.certificate = assymEncObjects.getCertificate();
 		this.dataSource = dataSource;
-		//For searchable encryption
-		byte[] sk_bytes = new byte[20];
-		byte[] iv_bytes = new byte[16];
-		rndGenerator.nextBytes(sk_bytes);
-		rndGenerator.nextBytes(iv_bytes);
-		sk = new SecretKeySpec(sk_bytes, hmac_alg);
-		ivSSE = new IvParameterSpec(iv_bytes);
-		counters = new HashMap<>(100);
-		index = new HashMap<ByteArray,ByteArray>(1000);
-		sseObjects = new SSEObjects(ivSSE, counters, sk, index);
+		//For searchable encryption------------------------------------------
+		this.sseObjects = sseObjects;
 		this.accepterThread.setSseObjects(sseObjects);
 	}
 	

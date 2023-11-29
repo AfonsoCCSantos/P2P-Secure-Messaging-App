@@ -3,6 +3,8 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
@@ -12,6 +14,7 @@ import java.net.URL;
 import java.util.Random;
 
 import models.Message;
+import models.SSEObjects;
 
 public class Utils {
 	
@@ -70,11 +73,27 @@ public class Utils {
 	
 	public static byte[] serializeObject(Object obj) {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             ObjectOutputStream out = new ObjectOutputStream(bos)) {
+            ObjectOutputStream out = new ObjectOutputStream(bos)) {
             out.writeObject(obj);
             return bos.toByteArray();
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
+        }
+    }
+	
+	public static void serializeSSEObjectToFile(SSEObjects obj, String filePath) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath))) {
+            oos.writeObject(obj);
+        } catch (IOException e) {
+        	return;
+        }
+    }
+	
+	public static SSEObjects deserializeSSEObjectFromFile(String filePath) {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath))) {
+            return (SSEObjects) ois.readObject();
+        } catch (IOException | ClassNotFoundException e) {
             return null;
         }
     }

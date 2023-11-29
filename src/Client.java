@@ -4,19 +4,28 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -24,11 +33,17 @@ import com.zaxxer.hikari.HikariDataSource;
 import client.ClientStub;
 import client.threads.AcceptConnectionsThread;
 import models.AssymetricEncryptionObjects;
+import models.SSEObjects;
 import utils.Utils;
+import utils.models.ByteArray;
 
 public class Client {
 	
 	private static final int SERVER_PORT_NUMBER = 6789;
+	private static final String PATH_TO_SSEOBJECTS = "serverFiles/sseObjects.txt";
+	private static final String hmac_alg = "HmacSHA1";
+	private static final SecureRandom rndGenerator = new SecureRandom();
+	private static IvParameterSpec ivSSE;	//fixed iv for simplicity
 	
 	public static void main(String[] args) {
 		Scanner inputReader = new Scanner(System.in);
@@ -62,7 +77,25 @@ public class Client {
 		showMenu();
 		Socket talkToServer = connectToServerSocket();
 		AcceptConnectionsThread accepterThread = new AcceptConnectionsThread(portNumber, assymEncryptionObjs.getPrivateKey(), dataSource);
-		ClientStub clientStub = new ClientStub(username, accepterThread, talkToServer, assymEncryptionObjs, dataSource);
+		//For searchable encryption------------------------------------------------------
+		//First check if there is already a file with the necessary objects.
+		Path path = Paths.get(PATH_TO_SSEOBJECTS);
+		SSEObjects sseObjects = null;
+		if (Files.exists(path)) {
+			sseObjects = Utils.deserializeSSEObjectFromFile(PATH_TO_SSEOBJECTS);
+		}
+		else {
+			byte[] sk_bytes = new byte[20];
+			byte[] iv_bytes = new byte[16];
+			rndGenerator.nextBytes(sk_bytes);
+			rndGenerator.nextBytes(iv_bytes);
+			SecretKeySpec sk = new SecretKeySpec(sk_bytes, hmac_alg);
+			ivSSE = new IvParameterSpec(iv_bytes);
+			HashMap<String,Integer> counters = new HashMap<>(100);
+			Map<ByteArray,ByteArray> index = new HashMap<ByteArray,ByteArray>(1000);
+			sseObjects = new SSEObjects(ivSSE, counters, sk, index);
+		}
+		ClientStub clientStub = new ClientStub(username, accepterThread, talkToServer, assymEncryptionObjs, dataSource, sseObjects);
 		clientStub.login(username, ipAddress, portNumber);
 		accepterThread.start();
 		
