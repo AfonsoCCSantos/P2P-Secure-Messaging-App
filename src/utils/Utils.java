@@ -18,6 +18,7 @@ import java.sql.SQLException;
 import java.util.Random;
 
 import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
+import models.AbeObjects;
 import models.Message;
 import models.SSEObjects;
 
@@ -108,7 +109,7 @@ public class Utils {
         }
     }
 	
-	public static void serializePublicAttrbsKey(PairingKeySerParameter obj, String filePath) {
+	public static void serializeAbeObjectsToFile(AbeObjects obj, String filePath) {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath))) {
             oos.writeObject(obj);
         } catch (IOException e) {

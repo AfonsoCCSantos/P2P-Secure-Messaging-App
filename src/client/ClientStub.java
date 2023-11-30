@@ -431,9 +431,8 @@ public class ClientStub {
 		return authenticatedMessage;
 	}
 	
-	public void logout(String pathToSSEObjects, String pathToPublicAttrbsKey, String pathToAttrbsKey) {
+	public void logout(String pathToSSEObjects, String pathToAbeObjects) {
 		Utils.serializeSSEObjectToFile(sseObjects, pathToSSEObjects);
-		Utils.serializePublicAttrbsKey(abeObjects.getPublicAttributesKey(), pathToPublicAttrbsKey);
-		Utils.serializePublicAttrbsKey(abeObjects.getAttributesKey(), pathToAttrbsKey);
+		Utils.serializeAbeObjectsToFile(abeObjects, pathToAbeObjects);
 	}
 }

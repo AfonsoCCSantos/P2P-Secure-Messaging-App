@@ -1,11 +1,19 @@
 package models;
 
+import java.io.Serializable;
+
 import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
 
-public class AbeObjects {
+public class AbeObjects implements Serializable {
+	
+	private static final long serialVersionUID = 1L;
 	
 	private PairingKeySerParameter attributesKey;
 	private PairingKeySerParameter publicAttributesKey;
+	
+	public AbeObjects() {
+		
+	}
 	
 	public AbeObjects(PairingKeySerParameter attributesKey, PairingKeySerParameter publicAttributesKey) {
 		this.attributesKey = attributesKey;

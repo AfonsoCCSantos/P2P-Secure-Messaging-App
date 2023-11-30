@@ -68,17 +68,14 @@ public class Client {
 		
 		pathToSSEObjects = username + "/sseObjects.txt";
 		String pathToPBEParams = username + "/pbeParams.txt";
-		String pathToPublicAttrbsKey = username + "/publicAttrbsKey.txt";
-		String pathToAttrbsKey = username + "/attrbsKey.txt";
+		String pathToAbeObjects = username + "/abeObjects.txt";
 		
 		//For PBE Encryption of saved messages
 		SecretKey conversationsKey = getPasswordKey(args[2]);
 		AlgorithmParameters params = getAlgorithmParameters(conversationsKey, pathToPBEParams);
 		PBEEncryptionObjects pbeEncryptionObjs = new PBEEncryptionObjects(conversationsKey, params);
 		
-		PairingKeySerParameter publicAttributesKey = getPublicAttributesKey(pathToPublicAttrbsKey);
-		PairingKeySerParameter attributesKey = getPublicAttributesKey(pathToAttrbsKey); //Both are PairingKeySerParameter
-		AbeObjects abeObjects = new AbeObjects(attributesKey, publicAttributesKey);
+		AbeObjects abeObjects = getAbeObjects(pathToAbeObjects);
 		
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl("jdbc:sqlite:" + username + "/client.db");
@@ -194,7 +191,7 @@ public class Client {
 					System.out.println();
 					break;
 				case "quit":
-					clientStub.logout(pathToSSEObjects, pathToPublicAttrbsKey, pathToAttrbsKey);
+					clientStub.logout(pathToSSEObjects, pathToAbeObjects);
 					System.out.println("Bye!");
 					dataSource.close();
 					System.exit(0);
@@ -283,17 +280,17 @@ public class Client {
 		return key;
 	}
     
-    private static PairingKeySerParameter getPublicAttributesKey(String pathToKey) {
-    	PairingKeySerParameter publAttrbsKey = null;
-    	Path path = Paths.get(pathToKey);
+    private static AbeObjects getAbeObjects(String pathtoAbeObjects) {
+    	AbeObjects abeObjects = new AbeObjects();
+    	Path path = Paths.get(pathtoAbeObjects);
     	if (Files.exists(path)) {
-    		try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(pathToKey))) {
-    			publAttrbsKey = (PairingKeySerParameter) ois.readObject();
+    		try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(pathtoAbeObjects))) {
+    			abeObjects = (AbeObjects) ois.readObject();
             } catch (ClassNotFoundException | IOException e) {
 				e.printStackTrace();
 			}
     	}
-    	return publAttrbsKey;
+    	return abeObjects;
     }
     
 	private static AlgorithmParameters getAlgorithmParameters(SecretKey conversationsKey, String pathToPBEParams) {
