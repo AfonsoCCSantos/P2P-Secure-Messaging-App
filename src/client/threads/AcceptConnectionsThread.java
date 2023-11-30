@@ -7,6 +7,8 @@ import java.security.PrivateKey;
 import com.zaxxer.hikari.HikariDataSource;
 
 import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
+import models.AbeObjects;
+import models.PBEEncryptionObjects;
 import models.SSEObjects;
 
 public class AcceptConnectionsThread extends Thread {
@@ -15,19 +17,30 @@ public class AcceptConnectionsThread extends Thread {
 	private String username;
 	private String topic;
 	private PrivateKey privateKey;
-	private PairingKeySerParameter attributesKey;
-	private PairingKeySerParameter publicAttributesKey;
+	private AbeObjects abeObjects;
 	private HikariDataSource dataSource;
 	private SSEObjects sseObjects;
+	private PBEEncryptionObjects pbeEncryptionObjs;
 	
-	public AcceptConnectionsThread(int port, PrivateKey privateKey, HikariDataSource dataSource) {
+	public AcceptConnectionsThread(int port, PrivateKey privateKey, HikariDataSource dataSource,
+			                       PBEEncryptionObjects pbeEncryptionObjs, AbeObjects abeObjects) {
 		this.port = port;	
 		this.privateKey = privateKey;
 		this.dataSource = dataSource;
+		this.pbeEncryptionObjs = pbeEncryptionObjs;
+		this.abeObjects = abeObjects;
 		this.username = null;
 		this.topic = null;
 	}
-	
+
+	public PBEEncryptionObjects getPbeEncryptionObjs() {
+		return pbeEncryptionObjs;
+	}
+
+	public void setPbeEncryptionObjs(PBEEncryptionObjects pbeEncryptionObjs) {
+		this.pbeEncryptionObjs = pbeEncryptionObjs;
+	}
+
 	public HikariDataSource getDataSource() {
 		return dataSource;
 	}
@@ -35,21 +48,13 @@ public class AcceptConnectionsThread extends Thread {
 	public void setDataSource(HikariDataSource dataSource) {
 		this.dataSource = dataSource;
 	}
-
-	public PairingKeySerParameter getAttributesKey() {
-		return attributesKey;
+	
+	public AbeObjects getAbeObjects() {
+		return abeObjects;
 	}
 
-	public void setAttributesKey(PairingKeySerParameter attributesKey) {
-		this.attributesKey = attributesKey;
-	}
-
-	public PairingKeySerParameter getPublicAttributesKey() {
-		return publicAttributesKey;
-	}
-
-	public void setPublicAttributesKey(PairingKeySerParameter publicAttributesKey) {
-		this.publicAttributesKey = publicAttributesKey;
+	public void setAbeObjects(AbeObjects abeObjects) {
+		this.abeObjects = abeObjects;
 	}
 
 	public void setUsername(String username) {
@@ -87,7 +92,7 @@ public class AcceptConnectionsThread extends Thread {
 			Socket socket;
 			try {
 				socket = serverSocket.accept();
-				TalkToThread newTalkToThread = new TalkToThread(socket, this, privateKey, sseObjects);
+				TalkToThread newTalkToThread = new TalkToThread(socket, this, privateKey, sseObjects, pbeEncryptionObjs);
 				newTalkToThread.start();
 			} catch (IOException e) {
 				e.printStackTrace();

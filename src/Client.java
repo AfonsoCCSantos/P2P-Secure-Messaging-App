@@ -1,4 +1,5 @@
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -7,6 +8,8 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.AlgorithmParameters;
+import java.security.InvalidKeyException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -15,16 +18,19 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.spec.InvalidKeySpecException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 
-import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import com.zaxxer.hikari.HikariConfig;
@@ -32,7 +38,10 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import client.ClientStub;
 import client.threads.AcceptConnectionsThread;
+import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
+import models.AbeObjects;
 import models.AssymetricEncryptionObjects;
+import models.PBEEncryptionObjects;
 import models.SSEObjects;
 import utils.Utils;
 import utils.models.ByteArray;
@@ -46,8 +55,8 @@ public class Client {
 	
 	public static void main(String[] args) {
 		Scanner inputReader = new Scanner(System.in);
-		if (args.length < 2) {
-			System.err.println("You need to provide an username and a password for the keystore.");
+		if (args.length < 3) {
+			System.err.println("You need to provide an username, the keystore's password and the password to save the messages.");
 			System.exit(-1);
 		}
 		
@@ -58,18 +67,24 @@ public class Client {
 		}
 		
 		pathToSSEObjects = username + "/sseObjects.txt";
+		String pathToPBEParams = username + "/pbeParams.txt";
+		String pathToPublicAttrbsKey = username + "/publicAttrbsKey.txt";
+		String pathToAttrbsKey = username + "/attrbsKey.txt";
+		
+		//For PBE Encryption of saved messages
+		SecretKey conversationsKey = getPasswordKey(args[2]);
+		AlgorithmParameters params = getAlgorithmParameters(conversationsKey, pathToPBEParams);
+		PBEEncryptionObjects pbeEncryptionObjs = new PBEEncryptionObjects(conversationsKey, params);
+		
+		PairingKeySerParameter publicAttributesKey = getPublicAttributesKey(pathToPublicAttrbsKey);
+		PairingKeySerParameter attributesKey = getPublicAttributesKey(pathToAttrbsKey); //Both are PairingKeySerParameter
+		AbeObjects abeObjects = new AbeObjects(attributesKey, publicAttributesKey);
 		
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl("jdbc:sqlite:" + username + "/client.db");
 		HikariDataSource dataSource = new HikariDataSource(config);
-		Connection connection = null;
-		try {
-			connection = dataSource.getConnection();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
 		
-		createTables(connection);
+		createTables(dataSource);
 		
 		var assymEncryptionObjs = keyStoreManage(username, args[1]);
 		int portNumber = Utils.generatePortNumber();
@@ -77,15 +92,14 @@ public class Client {
 		
 		showMenu();
 		Socket talkToServer = connectToServerSocket();
-		AcceptConnectionsThread accepterThread = new AcceptConnectionsThread(portNumber, assymEncryptionObjs.getPrivateKey(), dataSource);
+		AcceptConnectionsThread accepterThread = new AcceptConnectionsThread(portNumber, assymEncryptionObjs.getPrivateKey(),
+																			 dataSource, pbeEncryptionObjs, abeObjects);
 		//For searchable encryption------------------------------------------------------
 		//First check if there is already a file with the necessary objects.
 		Path path = Paths.get(pathToSSEObjects);
 		SSEObjects sseObjects = null;
 		if (Files.exists(path)) {
-			System.out.println("aqui");
 			sseObjects = Utils.deserializeSSEObjectFromFile(pathToSSEObjects);
-			System.out.println(sseObjects);
 		}
 		else {
 			byte[] sk_bytes = new byte[20];
@@ -98,7 +112,9 @@ public class Client {
 			sseObjects = new SSEObjects(iv_bytes, counters, sk, index);
 			Utils.serializeSSEObjectToFile(sseObjects, pathToSSEObjects);
 		}
-		ClientStub clientStub = new ClientStub(username, accepterThread, talkToServer, assymEncryptionObjs, dataSource, sseObjects);
+		
+		ClientStub clientStub = new ClientStub(username, accepterThread, talkToServer, assymEncryptionObjs, 
+											   dataSource, sseObjects, pbeEncryptionObjs, abeObjects);
 		clientStub.login(username, ipAddress, portNumber);
 		accepterThread.start();
 		
@@ -178,14 +194,15 @@ public class Client {
 					System.out.println();
 					break;
 				case "quit":
-					Utils.serializeSSEObjectToFile(sseObjects, pathToSSEObjects);
+					clientStub.logout(pathToSSEObjects, pathToPublicAttrbsKey, pathToAttrbsKey);
 					System.out.println("Bye!");
+					dataSource.close();
 					System.exit(0);
 					break;
 			}
 		}
 	} 
-	
+
 	private static boolean validateUsername(String userName) {
 		return !userName.contains("-");
 	}
@@ -228,22 +245,77 @@ public class Client {
 		return toReturn;
 	}
     
-    private static void createTables(Connection connection) {
+    private static void createTables(HikariDataSource dataSource) {
 		Statement statement;
+		try (Connection connection = dataSource.getConnection()) {
+			try {
+				statement = connection.createStatement();
+				if (!Utils.tableExists(connection, "groups")) {
+	                statement.execute("CREATE TABLE groups ("
+	                        + "group_id INTEGER PRIMARY KEY,"
+	                        + "group_name TEXT)");
+	            }
+	            if (!Utils.tableExists(connection, "conversations")) {
+	            	statement.execute("CREATE TABLE conversations ("
+	                        + "conversation_name TEXT PRIMARY KEY,"
+	                        + "conversation_messages TEXT)");
+	            }
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		} catch (SQLException e1) {
+			e1.printStackTrace();
+		}
+	}
+    
+    private static SecretKey getPasswordKey(String password) {
+		byte[] salt = { (byte) 0xc9, (byte) 0x36, (byte) 0x78, (byte) 0x99,
+				(byte) 0x52, (byte) 0x3e, (byte) 0xea, (byte) 0xf2 };
+		PBEKeySpec keySpec = new PBEKeySpec(password.toCharArray(), salt, 20);
+		SecretKeyFactory kf = null;
+		SecretKey key;
 		try {
-			statement = connection.createStatement();
-			if (!Utils.tableExists(connection, "groups")) {
-                statement.execute("CREATE TABLE groups ("
-                        + "group_id INTEGER PRIMARY KEY,"
-                        + "group_name TEXT)");
-            }
-            if (!Utils.tableExists(connection, "conversations")) {
-            	statement.execute("CREATE TABLE conversations ("
-                        + "conversation_name TEXT PRIMARY KEY,"
-                        + "conversation_messages TEXT)");
-            }
-		} catch (SQLException e) {
+			kf = SecretKeyFactory.getInstance("PBEWithHmacSHA256AndAES_128");
+			key = kf.generateSecret(keySpec);
+		} catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
+		}
+		return key;
+	}
+    
+    private static PairingKeySerParameter getPublicAttributesKey(String pathToKey) {
+    	PairingKeySerParameter publAttrbsKey = null;
+    	Path path = Paths.get(pathToKey);
+    	if (Files.exists(path)) {
+    		try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(pathToKey))) {
+    			publAttrbsKey = (PairingKeySerParameter) ois.readObject();
+            } catch (ClassNotFoundException | IOException e) {
+				e.printStackTrace();
+			}
+    	}
+    	return publAttrbsKey;
+    }
+    
+	private static AlgorithmParameters getAlgorithmParameters(SecretKey conversationsKey, String pathToPBEParams) {
+		AlgorithmParameters params = null;
+		try {
+			Path path = Paths.get(pathToPBEParams);
+			params = AlgorithmParameters.getInstance("PBEWithHmacSHA256AndAES_128");
+			byte[] paramsBytes;
+			if (Files.exists(path)) {
+				paramsBytes = Utils.readFromFile(pathToPBEParams);
+				params.init(paramsBytes);
+			}
+			else {
+				Cipher c = Cipher.getInstance("PBEWithHmacSHA256AndAES_128");
+				c.init(Cipher.ENCRYPT_MODE, conversationsKey);
+				paramsBytes = c.getParameters().getEncoded();
+				params.init(paramsBytes);
+				Utils.writeToFile(pathToPBEParams, paramsBytes);
+			}
+		} catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IOException e) {
 			e.printStackTrace();
 		}
+		return params;
 	}
 }

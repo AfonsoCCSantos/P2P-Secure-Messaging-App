@@ -24,7 +24,9 @@ import cn.edu.buaa.crypto.encryption.abe.kpabe.KPABEEngine;
 import cn.edu.buaa.crypto.encryption.abe.kpabe.gpsw06a.KPABEGPSW06aEngine;
 import models.AuthenticatedMessage;
 import models.Message;
+import models.PBEEncryptionObjects;
 import models.SSEObjects;
+import models.AbeObjects;
 import utils.DatabaseUtils;
 import utils.EncryptionUtils;
 import utils.SSEUtils;
@@ -36,12 +38,15 @@ public class TalkToThread extends Thread {
 	private AcceptConnectionsThread accepterThread;
 	private PrivateKey privateKey;
 	private SSEObjects sseObjects;
+	private PBEEncryptionObjects pbeEncryptionObjs;
 	
-	public TalkToThread(Socket inSocket, AcceptConnectionsThread accepterThread, PrivateKey privateKey, SSEObjects sseObjects) {
+	public TalkToThread(Socket inSocket, AcceptConnectionsThread accepterThread, PrivateKey privateKey,
+			            SSEObjects sseObjects, PBEEncryptionObjects pbeEncryptionObjs) {
 		this.socket = inSocket;
 		this.accepterThread = accepterThread;
 		this.privateKey = privateKey;
 		this.sseObjects = sseObjects;
+		this.pbeEncryptionObjs = pbeEncryptionObjs;
 	}	
 	
 	public void run() {
@@ -87,7 +92,8 @@ public class TalkToThread extends Thread {
 					IvParameterSpec iv = new IvParameterSpec(ivBytes);
 					KPABEEngine engine = KPABEGPSW06aEngine.getInstance();
 					String[] attributes = new String[] {groupId.toString()};
-					byte[] sessionKey = engine.decapsulation(accepterThread.getPublicAttributesKey(), accepterThread.getAttributesKey(), attributes, encapsulationPairHeader);
+					AbeObjects abeObjects = accepterThread.getAbeObjects();
+					byte[] sessionKey = engine.decapsulation(abeObjects.getPublicAttributesKey(), abeObjects.getAttributesKey(), attributes, encapsulationPairHeader);
 					SecretKey k = new SecretKeySpec(Arrays.copyOfRange(sessionKey, 0, 16), "AES");
 					String decrypted = EncryptionUtils.aesDecrypt(message, k, iv);
 					
@@ -99,7 +105,6 @@ public class TalkToThread extends Thread {
 					
 					if ((accepterThread.getTopic() == null && accepterThread.getUsername() == null) || (accepterThread.getTopic() != null && accepterThread.getTopic().equals(conversationName)))
 						System.out.println("(" + conversationName +":" + userName + ")" + " - " + text);
-					
 				}
 				
 				else {
@@ -118,7 +123,7 @@ public class TalkToThread extends Thread {
 				}
 				
 				String messageToSave = username + "-" + text;
-				DatabaseUtils.registerMessageInConversations(conversationName, accepterThread.getDataSource(), messageToSave);
+				DatabaseUtils.registerMessageInConversations(conversationName, accepterThread.getDataSource(), messageToSave, pbeEncryptionObjs);
 				for (String keyword : text.split(" ")) {
 					SSEUtils.update(keyword, conversationName, sseObjects);
 				}

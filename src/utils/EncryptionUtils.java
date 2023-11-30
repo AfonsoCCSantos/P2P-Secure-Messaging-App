@@ -14,6 +14,8 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
+import models.PBEEncryptionObjects;
+
 public class EncryptionUtils {
 	
 	public static String rsaEncrypt(String message, PublicKey userToTalkPK) {
@@ -50,6 +52,32 @@ public class EncryptionUtils {
 		return new IvParameterSpec(iv);
 	}
 	
+	public static String encryptWithSecretKey(String message, PBEEncryptionObjects pbeEncryptionObjs) {
+		String encrypted = null;
+		try {
+			Cipher c = Cipher.getInstance("PBEWithHmacSHA256AndAES_128");
+			c.init(Cipher.ENCRYPT_MODE, pbeEncryptionObjs.getSecretKey(), pbeEncryptionObjs.getParams());
+			byte[] encryptedBytes = c.doFinal(message.getBytes());
+			encrypted = Base64.getEncoder().encodeToString(encryptedBytes);
+		} catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e) {
+			e.printStackTrace();
+		}
+		return encrypted;
+	}
+	
+	public static String decryptWithSecretKey(String message, PBEEncryptionObjects pbeEncryptionObjs) {
+		String decrypted = null;
+		try {
+			Cipher d = Cipher.getInstance("PBEWithHmacSHA256AndAES_128");
+			d.init(Cipher.DECRYPT_MODE, pbeEncryptionObjs.getSecretKey(), pbeEncryptionObjs.getParams());
+			byte[] plainText = d.doFinal(Base64.getDecoder().decode(message));
+			decrypted = new String(plainText);
+		} catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e) {
+			e.printStackTrace();
+		}
+		return decrypted;
+	}
+	
 	public static String aesEncrypt(String message,  SecretKey k, IvParameterSpec iv) {
 		String encrypted = null;
 		try {
@@ -71,7 +99,6 @@ public class EncryptionUtils {
 			byte[] plainText = cipher.doFinal(Base64.getDecoder().decode(message));
 			decrypted = new String(plainText);
 		} catch (IllegalBlockSizeException | BadPaddingException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return decrypted;

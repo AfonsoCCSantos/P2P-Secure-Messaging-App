@@ -17,6 +17,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Random;
 
+import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
 import models.Message;
 import models.SSEObjects;
 
@@ -64,6 +65,30 @@ public class Utils {
 		}
 	}
 	
+	public static byte[] readFromFile(String filePath) {
+		try {
+			FileInputStream fis = new FileInputStream(filePath);
+            int fileSize = (int) fis.available();
+            byte[] data = new byte[fileSize];
+            fis.read(data);
+            fis.close();
+            return data;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+		return null;
+	}
+	
+	public static void writeToFile(String filePath, byte[] data) {
+		try {
+            FileOutputStream fos = new FileOutputStream(filePath);
+            fos.write(data);
+            fos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+	}
+	
 	public static byte[] serializeObject(Object obj) {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
             ObjectOutputStream out = new ObjectOutputStream(bos)) {
@@ -76,6 +101,14 @@ public class Utils {
     }
 	
 	public static void serializeSSEObjectToFile(SSEObjects obj, String filePath) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath))) {
+            oos.writeObject(obj);
+        } catch (IOException e) {
+        	return;
+        }
+    }
+	
+	public static void serializePublicAttrbsKey(PairingKeySerParameter obj, String filePath) {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath))) {
             oos.writeObject(obj);
         } catch (IOException e) {

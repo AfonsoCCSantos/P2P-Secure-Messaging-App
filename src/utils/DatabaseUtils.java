@@ -5,7 +5,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import javax.crypto.SecretKey;
+
 import com.zaxxer.hikari.HikariDataSource;
+
+import models.PBEEncryptionObjects;
 
 public class DatabaseUtils {
 	
@@ -38,13 +42,15 @@ public class DatabaseUtils {
         return -1;
 	}
 	
-	public static int registerMessageInConversations(String conversationName, HikariDataSource dataSource, String message) {
+	public static int registerMessageInConversations(String conversationName, HikariDataSource dataSource, String message,
+													 PBEEncryptionObjects pbeEncryptionObjs) {
 		String newMessages = null;
 		String selectSql = "SELECT conversation_messages FROM conversations WHERE conversation_name = ?";
 		try (Connection connection = dataSource.getConnection()) {
 			try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
 	            preparedStatement.setString(1, conversationName);
 	            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+	            	message = EncryptionUtils.encryptWithSecretKey(message, pbeEncryptionObjs);
 	                if (resultSet.next()) {
 	                	newMessages = resultSet.getString("conversation_messages") + message + ";";
 	                }

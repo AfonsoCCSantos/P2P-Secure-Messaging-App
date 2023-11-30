@@ -5,7 +5,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.security.InvalidKeyException;
-import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -19,13 +18,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
-import javax.crypto.Cipher;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
@@ -33,23 +29,24 @@ import javax.crypto.spec.SecretKeySpec;
 
 import com.zaxxer.hikari.HikariDataSource;
 
-import utils.models.ByteArray;
 import client.threads.AcceptConnectionsThread;
 import cn.edu.buaa.crypto.algebra.serparams.PairingKeyEncapsulationSerPair;
 import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
 import cn.edu.buaa.crypto.encryption.abe.kpabe.KPABEEngine;
 import cn.edu.buaa.crypto.encryption.abe.kpabe.gpsw06a.KPABEGPSW06aEngine;
+import models.AbeObjects;
 import models.AssymetricEncryptionObjects;
 import models.AuthenticatedMessage;
 import models.Constants;
 import models.Message;
+import models.PBEEncryptionObjects;
 import models.SSEObjects;
 import utils.DatabaseUtils;
 import utils.EncryptionUtils;
 import utils.SSEUtils;
 import utils.Utils;
 
-public class ClientStub{
+public class ClientStub {
 	
 	private static final SecureRandom rndGenerator = new SecureRandom();
 	
@@ -59,15 +56,16 @@ public class ClientStub{
 	private ObjectOutputStream outToServer;
 	private PrivateKey privateKey;
 	private Certificate certificate;
-	private PairingKeySerParameter attributesKey;
-	private PairingKeySerParameter publicAttributesKey;
 	private HikariDataSource dataSource;
 	//For searchable encryption
 	private SSEObjects sseObjects;
+	private PBEEncryptionObjects pbeEncryptionObjs;
+	//For attribute based encryption
+	private AbeObjects abeObjects;
 	
 	public ClientStub(String user, AcceptConnectionsThread accepterThread, Socket talkToServer,
 					  AssymetricEncryptionObjects assymEncObjects, HikariDataSource dataSource,
-					  SSEObjects sseObjects) {
+					  SSEObjects sseObjects, PBEEncryptionObjects pbeEncryptionObjs, AbeObjects abeObjects) {
 		this.user = user;
 		this.accepterThread = accepterThread;
 		this.outToServer = Utils.gOutputStream(talkToServer);
@@ -75,8 +73,10 @@ public class ClientStub{
 		this.privateKey = assymEncObjects.getPrivateKey();
 		this.certificate = assymEncObjects.getCertificate();
 		this.dataSource = dataSource;
+		this.abeObjects = abeObjects;
 		//For searchable encryption------------------------------------------
 		this.sseObjects = sseObjects;
+		this.pbeEncryptionObjs = pbeEncryptionObjs;
 		this.accepterThread.setSseObjects(sseObjects);
 	}
 	
@@ -162,7 +162,7 @@ public class ClientStub{
 				Message messageToSend = new Message(false, encryptedMessage);
 				AuthenticatedMessage authenticatedMessage = createAuthenticatedMessage(mac, messageToSend);
 				outToClient.writeObject(authenticatedMessage);	
-				DatabaseUtils.registerMessageInConversations(username, dataSource, message);
+				DatabaseUtils.registerMessageInConversations(username, dataSource, message, pbeEncryptionObjs);
 				for (String keyword : typedMessage.split(" ")) {
 					SSEUtils.update(keyword, username, sseObjects);
 				}
@@ -202,7 +202,8 @@ public class ClientStub{
 			//encapsulate session key
 			KPABEEngine engine = KPABEGPSW06aEngine.getInstance();
 			String[] attributes = new String[] {groupId.toString()};
-			PairingKeyEncapsulationSerPair encapsulationPair = engine.encapsulation(publicAttributesKey, attributes); 
+			//System.out.println("Public attributes key: " + publicAttributesKey);
+			PairingKeyEncapsulationSerPair encapsulationPair = engine.encapsulation(abeObjects.getPublicAttributesKey(), attributes); 
 			byte[] sessionKey = encapsulationPair.getSessionKey();
 			
 			SecretKey k1 = new SecretKeySpec(Arrays.copyOfRange(sessionKey, 0, 16), "AES");
@@ -234,7 +235,7 @@ public class ClientStub{
 					AuthenticatedMessage authenticatedMessage = createAuthenticatedMessage(mac, messageToSend);
 					outToClient.writeObject(authenticatedMessage);	
 				}
-				DatabaseUtils.registerMessageInConversations(topic, dataSource, this.user + "-" + typedMessage);
+				DatabaseUtils.registerMessageInConversations(topic, dataSource, this.user + "-" + typedMessage, pbeEncryptionObjs);
 				for (String keyword : typedMessage.split(" ")) {
 					SSEUtils.update(keyword, topic, sseObjects);
 				}
@@ -268,10 +269,11 @@ public class ClientStub{
 			insertGroup(groupId, topic);
 			
 			//se sucesso recebe chave
-			this.attributesKey = (PairingKeySerParameter) inFromServer.readObject();
-			this.publicAttributesKey = (PairingKeySerParameter) inFromServer.readObject();
-			this.accepterThread.setAttributesKey(this.attributesKey);
-			this.accepterThread.setPublicAttributesKey(this.publicAttributesKey);
+			PairingKeySerParameter attributesKey = (PairingKeySerParameter) inFromServer.readObject();
+			PairingKeySerParameter publicAttributesKey = (PairingKeySerParameter) inFromServer.readObject();
+			abeObjects.setAttributesKey(attributesKey);
+			abeObjects.setPublicAttributesKey(publicAttributesKey);
+			this.accepterThread.setAbeObjects(abeObjects);
 		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -352,10 +354,11 @@ public class ClientStub{
 			insertGroup(groupId, topic);
 			
 			//se sucesso recebe chave
-			this.attributesKey = (PairingKeySerParameter) inFromServer.readObject();
-			this.publicAttributesKey = (PairingKeySerParameter) inFromServer.readObject();
-			this.accepterThread.setAttributesKey(this.attributesKey);
-			this.accepterThread.setPublicAttributesKey(this.publicAttributesKey);
+			PairingKeySerParameter attributesKey = (PairingKeySerParameter) inFromServer.readObject();
+			PairingKeySerParameter publicAttributesKey = (PairingKeySerParameter) inFromServer.readObject();
+			abeObjects.setAttributesKey(attributesKey);
+			abeObjects.setPublicAttributesKey(publicAttributesKey);
+			this.accepterThread.setAbeObjects(abeObjects);
 		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -404,7 +407,9 @@ public class ClientStub{
 	                	if (resultSet.next()) {
 	                		messagesOfConvo = resultSet.getString("conversation_messages");
 	                		String[] messagesInSeparate = messagesOfConvo.split(";");
-	                		for (String message : messagesInSeparate) {
+	                		String message = null;
+	                		for (int i = 0; i < messagesInSeparate.length; i++) {
+	                			message = EncryptionUtils.decryptWithSecretKey(messagesInSeparate[i], pbeEncryptionObjs);
 	                			if (message.contains(keyword)) 
 	                				sb.append("\t" + message + "\n");
 	                		}
@@ -424,5 +429,11 @@ public class ClientStub{
 		byte[] messageMac = mac.doFinal(messageAsBytes);
 		AuthenticatedMessage authenticatedMessage = new AuthenticatedMessage(messageToSend, messageMac);
 		return authenticatedMessage;
+	}
+	
+	public void logout(String pathToSSEObjects, String pathToPublicAttrbsKey, String pathToAttrbsKey) {
+		Utils.serializeSSEObjectToFile(sseObjects, pathToSSEObjects);
+		Utils.serializePublicAttrbsKey(abeObjects.getPublicAttributesKey(), pathToPublicAttrbsKey);
+		Utils.serializePublicAttrbsKey(abeObjects.getAttributesKey(), pathToAttrbsKey);
 	}
 }
