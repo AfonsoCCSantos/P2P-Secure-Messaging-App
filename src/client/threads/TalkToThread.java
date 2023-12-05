@@ -103,8 +103,13 @@ public class TalkToThread extends Thread {
 					username = userName;
 					text = decrypted.substring(conversationName.length()+userName.length()+2);
 					
-					if ((accepterThread.getTopic() == null && accepterThread.getUsername() == null) || (accepterThread.getTopic() != null && accepterThread.getTopic().equals(conversationName)))
-						System.out.println("(" + conversationName +":" + userName + ")" + " - " + text);
+					String toDisplay = "(" + conversationName +":" + userName + ")" + " - " + text;
+					if ((accepterThread.getTopic() == null && accepterThread.getUsername() == null) || (accepterThread.getTopic() != null && accepterThread.getTopic().equals(conversationName))) {
+						System.out.println(toDisplay);
+					}
+					else {
+						accepterThread.getMessageQueue().add(toDisplay);
+					}
 				}
 				
 				else {
@@ -113,8 +118,13 @@ public class TalkToThread extends Thread {
 					conversationName = decryptedText.split("-")[0];
 					username = conversationName;
 					text = decryptedText.substring(conversationName.length()+1);
-					if ((accepterThread.getTopic() == null && accepterThread.getUsername() == null) || (accepterThread.getUsername() != null && accepterThread.getUsername().equals(conversationName)))
-						System.out.println("(" + conversationName + ")" + " - " + text);
+					String toDisplay = "(" + conversationName + ")" + " - " + text;
+					if ((accepterThread.getTopic() == null && accepterThread.getUsername() == null) || (accepterThread.getUsername() != null && accepterThread.getUsername().equals(conversationName))) {
+						System.out.println(toDisplay);
+					}
+					else {
+						accepterThread.getMessageQueue().add(toDisplay);
+					}
 				}
 				
 				if (!alreadyCheckedDatabaseEntry) {

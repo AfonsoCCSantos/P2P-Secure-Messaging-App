@@ -3,10 +3,10 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.PrivateKey;
+import java.util.List;
 
 import com.zaxxer.hikari.HikariDataSource;
 
-import cn.edu.buaa.crypto.algebra.serparams.PairingKeySerParameter;
 import models.AbeObjects;
 import models.PBEEncryptionObjects;
 import models.SSEObjects;
@@ -21,14 +21,16 @@ public class AcceptConnectionsThread extends Thread {
 	private HikariDataSource dataSource;
 	private SSEObjects sseObjects;
 	private PBEEncryptionObjects pbeEncryptionObjs;
+	private List<String> messageQueue;
 	
 	public AcceptConnectionsThread(int port, PrivateKey privateKey, HikariDataSource dataSource,
-			                       PBEEncryptionObjects pbeEncryptionObjs, AbeObjects abeObjects) {
+			                       PBEEncryptionObjects pbeEncryptionObjs, AbeObjects abeObjects, List<String> messageQueue) {
 		this.port = port;	
 		this.privateKey = privateKey;
 		this.dataSource = dataSource;
 		this.pbeEncryptionObjs = pbeEncryptionObjs;
 		this.abeObjects = abeObjects;
+		this.messageQueue = messageQueue;
 		this.username = null;
 		this.topic = null;
 	}
@@ -79,6 +81,14 @@ public class AcceptConnectionsThread extends Thread {
 
 	public void setSseObjects(SSEObjects sseObjects) {
 		this.sseObjects = sseObjects;
+	}
+	
+	public List<String> getMessageQueue() {
+		return messageQueue;
+	}
+
+	public void setMessageQueue(List<String> messageQueue) {
+		this.messageQueue = messageQueue;
 	}
 
 	public void run() {

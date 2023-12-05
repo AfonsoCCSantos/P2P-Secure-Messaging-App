@@ -155,6 +155,15 @@ public class ClientStub {
 				String typedMessage = sc.nextLine();
 				if (typedMessage.equals(":q")) {
 					accepterThread.setUsername(null);
+					List<String> messageQueue = accepterThread.getMessageQueue();
+					if (messageQueue.size() > 0) {
+						System.out.println();
+						System.out.println("You received some messages: ");
+						for (String message : messageQueue) {
+							System.out.println(message);
+						}
+						accepterThread.setMessageQueue(new ArrayList<String>());
+					}
 					return 0;					
 				} 
 				String message = this.user + "-" + typedMessage;
@@ -223,6 +232,15 @@ public class ClientStub {
 				String typedMessage = sc.nextLine();
 				if (typedMessage.equals(":q")) {
 					accepterThread.setTopic(null);
+					List<String> messageQueue = accepterThread.getMessageQueue();
+					if (messageQueue.size() > 0) {
+						System.out.println();
+						System.out.println("You received some messages: ");
+						for (String message : messageQueue) {
+							System.out.println(message);
+						}
+						accepterThread.setMessageQueue(new ArrayList<String>());
+					}
 					return 0;					
 				} 
 				

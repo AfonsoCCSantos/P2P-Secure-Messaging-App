@@ -22,7 +22,9 @@ import java.security.spec.InvalidKeySpecException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -89,8 +91,10 @@ public class Client {
 		
 		showMenu();
 		Socket talkToServer = connectToServerSocket();
+		
+		List<String> messageQueue = new ArrayList<String>();
 		AcceptConnectionsThread accepterThread = new AcceptConnectionsThread(portNumber, assymEncryptionObjs.getPrivateKey(),
-																			 dataSource, pbeEncryptionObjs, abeObjects);
+																			 dataSource, pbeEncryptionObjs, abeObjects, messageQueue);
 		//For searchable encryption------------------------------------------------------
 		//First check if there is already a file with the necessary objects.
 		Path path = Paths.get(pathToSSEObjects);
