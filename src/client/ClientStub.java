@@ -298,43 +298,22 @@ public class ClientStub {
 		return 0;
 	}
 	
-	private List<Long> getGroupsIds() {
-		List<Long> groupIdsList = new ArrayList<>();
+	public String showConversations() {
+		StringBuilder sb = new StringBuilder();
 		try (Connection connection = dataSource.getConnection()) {
-            String selectSql = "SELECT group_id FROM groups";
-            try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
+			String selectSql = "SELECT conversation_name FROM conversations";
+			try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                    if (resultSet.next()) {
-                        Long id = resultSet.getLong("group_id");
-                        groupIdsList.add(id);
+                    while (resultSet.next()) {
+                        String convoName = resultSet.getString("conversation_name");
+                        sb.append(convoName + "\n");
                     }
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-		return groupIdsList;
-	}
-	
-	private Long getTopicId(String topic) {
-		Long groupId = null;
-		try (Connection connection = dataSource.getConnection()) {
-            String selectSql = "SELECT group_id FROM groups WHERE group_name = ?";
-            try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
-            	preparedStatement.setString(1, topic);
-            	
-                try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                    if (resultSet.next()) {
-                        groupId = resultSet.getLong("group_id");
-                    } else {
-		                System.out.println("User not in group with topic " + topic);
-		            }
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-		return groupId;
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return sb.toString();
 	}
 	
 	public void insertGroup(long groupId, String topic) {
@@ -442,6 +421,11 @@ public class ClientStub {
 		return sb.toString();
 	}
 	
+	public void logout(String pathToSSEObjects, String pathToAbeObjects) {
+		Utils.serializeSSEObjectToFile(sseObjects, pathToSSEObjects);
+		Utils.serializeAbeObjectsToFile(abeObjects, pathToAbeObjects);
+	}
+	
 	private AuthenticatedMessage createAuthenticatedMessage(Mac mac, Message messageToSend) {
 		byte[] messageAsBytes = Utils.serializeObject(messageToSend);
 		byte[] messageMac = mac.doFinal(messageAsBytes);
@@ -449,8 +433,43 @@ public class ClientStub {
 		return authenticatedMessage;
 	}
 	
-	public void logout(String pathToSSEObjects, String pathToAbeObjects) {
-		Utils.serializeSSEObjectToFile(sseObjects, pathToSSEObjects);
-		Utils.serializeAbeObjectsToFile(abeObjects, pathToAbeObjects);
+	private Long getTopicId(String topic) {
+		Long groupId = null;
+		try (Connection connection = dataSource.getConnection()) {
+            String selectSql = "SELECT group_id FROM groups WHERE group_name = ?";
+            try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
+            	preparedStatement.setString(1, topic);
+            	
+                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                    if (resultSet.next()) {
+                        groupId = resultSet.getLong("group_id");
+                    } else {
+		                System.out.println("User not in group with topic " + topic);
+		            }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+		return groupId;
 	}
+	
+	private List<Long> getGroupsIds() {
+		List<Long> groupIdsList = new ArrayList<>();
+		try (Connection connection = dataSource.getConnection()) {
+            String selectSql = "SELECT group_id FROM groups";
+            try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
+                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                	while (resultSet.next()) {
+                        Long id = resultSet.getLong("group_id");
+                        groupIdsList.add(id);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+		return groupIdsList;
+	}
+	
 }

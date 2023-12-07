@@ -89,7 +89,6 @@ public class Client {
 		int portNumber = Utils.generatePortNumber();
 		String ipAddress = Utils.getIpAddress();
 		
-		showMenu();
 		Socket talkToServer = connectToServerSocket();
 		
 		List<String> messageQueue = new ArrayList<String>();
@@ -117,6 +116,19 @@ public class Client {
 		ClientStub clientStub = new ClientStub(username, accepterThread, talkToServer, assymEncryptionObjs, 
 											   dataSource, sseObjects, pbeEncryptionObjs, abeObjects);
 		clientStub.login(username, ipAddress, portNumber);
+		
+		System.out.println("--------------------------------------------------");
+		System.out.println();
+		String conversations = clientStub.showConversations();
+		if (conversations.equals("")) {
+			System.out.println("You have no conversations");
+		}
+		else {
+			System.out.println(conversations);
+		}
+		System.out.println();
+		
+		showMenu();
 		accepterThread.start();
 		
 		while(true) {
