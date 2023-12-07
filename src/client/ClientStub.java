@@ -316,6 +316,53 @@ public class ClientStub {
 		return sb.toString();
 	}
 	
+	public void viewContents(String conversation) {
+		Scanner sc = new Scanner(System.in);
+		String input = null;
+		try (Connection connection = dataSource.getConnection()) {
+			String selectSql = "SELECT conversation_messages FROM conversations WHERE conversation_name = ?";
+            try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
+            	preparedStatement.setString(1, conversation);
+            	String messagesOfConvo = null;
+                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                	if (resultSet.next()) {
+                		messagesOfConvo = resultSet.getString("conversation_messages");
+                		String[] messagesInSeparate = messagesOfConvo.split(";");
+                		int currentIndex = 0;
+                		System.out.println("Press Enter for more results or type 'leave' to go back to the menu");
+                		System.out.println();
+                		while (true) {
+                			if (messagesInSeparate.length > currentIndex + 5) {
+                    			for (int i = currentIndex; i < currentIndex + 5; i++) {
+                    				String message = EncryptionUtils.decryptWithSecretKey(messagesInSeparate[i], pbeEncryptionObjs);
+                    				System.out.println(message);
+                    			}
+                    			currentIndex += 5;
+                    		}
+                    		else {
+                    			for (int i = currentIndex; i < messagesInSeparate.length; i++) {
+                    				String message = EncryptionUtils.decryptWithSecretKey(messagesInSeparate[i], pbeEncryptionObjs);
+                    				System.out.println(message);
+                    			}
+                    			System.out.println();
+                    			System.out.println("All messages in the conversation have been shown.");
+                    			return;
+                    		}
+                			input = sc.nextLine();
+                			if (input.equals("leave")) return;
+                		} 
+                	}
+                	else {
+                		System.out.println("You do not have a conversation with this user.");
+                	}
+                }
+            }
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
 	public void insertGroup(long groupId, String topic) {
 		try (Connection connection = dataSource.getConnection()) {
 			String insertSql = "INSERT INTO groups (group_id, group_name) VALUES (?, ?)";

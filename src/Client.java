@@ -205,6 +205,11 @@ public class Client {
 						System.out.println("No results found. ");
 					}
 					System.out.println();
+					System.out.println("Messages: ");
+					break;
+				case "viewContents":
+					clientStub.viewContents(tokens[1]);
+					System.out.println("Messages: ");
 					break;
 				case "quit":
 					clientStub.logout(pathToSSEObjects, pathToAbeObjects);
@@ -227,6 +232,7 @@ public class Client {
 		System.out.println("createGroup <topic> - Allows you to create a new group with the given topic");
 		System.out.println("joinGroup <topic> - Allows you to join the group with the given topic");
 		System.out.println("searchKeyword <keyword> - Allows you to retrieve the messages where the given keyword appears");
+		System.out.println("viewContents <conversation> - Allows you to view the contents of a conversation");
 		System.out.println("quit - Safely quits the application");
 		System.out.println();
 		System.out.println("Messages: ");
