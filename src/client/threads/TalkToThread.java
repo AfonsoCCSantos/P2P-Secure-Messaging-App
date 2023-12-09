@@ -22,7 +22,7 @@ import javax.crypto.SecretKey;
 import cn.edu.buaa.crypto.algebra.serparams.PairingCipherSerParameter;
 import cn.edu.buaa.crypto.encryption.abe.kpabe.KPABEEngine;
 import cn.edu.buaa.crypto.encryption.abe.kpabe.gpsw06a.KPABEGPSW06aEngine;
-import models.AuthenticatedMessage;
+import models.MessageWithMac;
 import models.Message;
 import models.PBEEncryptionObjects;
 import models.SSEObjects;
@@ -73,7 +73,7 @@ public class TalkToThread extends Thread {
 				String text = null;
 				String conversationName = null;
 				String username = null;
-				AuthenticatedMessage authMessageReceived = (AuthenticatedMessage) in.readObject();
+				MessageWithMac authMessageReceived = (MessageWithMac) in.readObject();
 				Message messageReceived = authMessageReceived.getMessage();
 				byte[] messageAsBytes = Utils.serializeObject(messageReceived);
 				byte[] messageMac = mac.doFinal(messageAsBytes);

@@ -2,14 +2,14 @@ package models;
 
 import java.io.Serializable;
 
-public class AuthenticatedMessage implements Serializable {
+public class MessageWithMac implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
 	
 	private Message message;
 	private byte[] mac;
 	
-	public AuthenticatedMessage(Message message, byte[] mac) {
+	public MessageWithMac(Message message, byte[] mac) {
 		this.message = message;
 		this.mac = mac;
 	}

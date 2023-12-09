@@ -124,6 +124,7 @@ public class Client {
 			System.out.println("You have no conversations");
 		}
 		else {
+			System.out.println("Currently you have conversations with: ");
 			System.out.println(conversations);
 		}
 		System.out.println();
@@ -209,6 +210,7 @@ public class Client {
 					break;
 				case "viewContents":
 					clientStub.viewContents(tokens[1]);
+					System.out.println();
 					System.out.println("Messages: ");
 					break;
 				case "quit":

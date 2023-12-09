@@ -36,7 +36,7 @@ import cn.edu.buaa.crypto.encryption.abe.kpabe.KPABEEngine;
 import cn.edu.buaa.crypto.encryption.abe.kpabe.gpsw06a.KPABEGPSW06aEngine;
 import models.AbeObjects;
 import models.AssymetricEncryptionObjects;
-import models.AuthenticatedMessage;
+import models.MessageWithMac;
 import models.Constants;
 import models.Message;
 import models.PBEEncryptionObjects;
@@ -169,7 +169,7 @@ public class ClientStub {
 				String message = this.user + "-" + typedMessage;
 				String encryptedMessage = EncryptionUtils.rsaEncrypt(message, userToTalkPK);
 				Message messageToSend = new Message(false, encryptedMessage);
-				AuthenticatedMessage authenticatedMessage = createAuthenticatedMessage(mac, messageToSend);
+				MessageWithMac authenticatedMessage = createAuthenticatedMessage(mac, messageToSend);
 				outToClient.writeObject(authenticatedMessage);	
 				DatabaseUtils.registerMessageInConversations(username, dataSource, message, pbeEncryptionObjs);
 				for (String keyword : typedMessage.split(" ")) {
@@ -250,7 +250,7 @@ public class ClientStub {
 				
 				for (ObjectOutputStream outToClient : socketOutstreamList) {
 					Message messageToSend = new Message(true, encrypted, encapsulationPair.getHeader(), iv.getIV(), groupId);
-					AuthenticatedMessage authenticatedMessage = createAuthenticatedMessage(mac, messageToSend);
+					MessageWithMac authenticatedMessage = createAuthenticatedMessage(mac, messageToSend);
 					outToClient.writeObject(authenticatedMessage);	
 				}
 				DatabaseUtils.registerMessageInConversations(topic, dataSource, this.user + "-" + typedMessage, pbeEncryptionObjs);
@@ -473,10 +473,10 @@ public class ClientStub {
 		Utils.serializeAbeObjectsToFile(abeObjects, pathToAbeObjects);
 	}
 	
-	private AuthenticatedMessage createAuthenticatedMessage(Mac mac, Message messageToSend) {
+	private MessageWithMac createAuthenticatedMessage(Mac mac, Message messageToSend) {
 		byte[] messageAsBytes = Utils.serializeObject(messageToSend);
 		byte[] messageMac = mac.doFinal(messageAsBytes);
-		AuthenticatedMessage authenticatedMessage = new AuthenticatedMessage(messageToSend, messageMac);
+		MessageWithMac authenticatedMessage = new MessageWithMac(messageToSend, messageMac);
 		return authenticatedMessage;
 	}
 	
