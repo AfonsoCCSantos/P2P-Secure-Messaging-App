@@ -40,7 +40,6 @@ public class Server {
 				ServerThread newServerThread = new ServerThread(inSocket, attributeEncryptionObjects, dataSource);
 				newServerThread.start();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -54,7 +53,8 @@ public class Server {
 			if (!Utils.tableExists(connection, "users")) {
                 statement.execute("CREATE TABLE users ("
                         + "username TEXT PRIMARY KEY,"
-                        + "ip_port TEXT)");
+                        + "ip_port TEXT,"
+                        + "is_online INTEGER DEFAULT 0)");
             }
             if (!Utils.tableExists(connection, "groups")) {
                 statement.execute("CREATE TABLE groups ("

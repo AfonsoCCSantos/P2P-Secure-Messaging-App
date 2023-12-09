@@ -67,6 +67,8 @@ public class ServerSkel {
 			else
 				loginKnownUser(signature, username, signedNonce, loginNonce);
 			
+			updateUserStatus(true, username);
+			
 		} catch (ClassNotFoundException | IOException | NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
@@ -149,7 +151,8 @@ public class ServerSkel {
     		for (int i = 0; i < members.length; i++) {
 				if(!members[i].equals(username)) {
 					String ipPort = getIpPort(members[i]);
-    				ipPorts.add(ipPort);
+					if (ipPort != null)
+						ipPorts.add(ipPort);
 				}
     		}
         } catch (SQLException e) {
@@ -291,6 +294,11 @@ public class ServerSkel {
         }
 	}
 	
+	public void logoutUser(String username) {
+		updateUserStatus(false, username);
+		System.out.println(username + " logged out");
+	}
+	
 	public long insertMemberIntoGroup(String topic, String username) {
 		long groupId = 0;
 		String members = null;
@@ -400,7 +408,7 @@ public class ServerSkel {
 		String ipPort = null;
 		try (Connection connection = dataSource.getConnection()) {
             // Retrieve the user's "ip_port" by username
-            String selectSql = "SELECT ip_port FROM users WHERE username = ?";
+            String selectSql = "SELECT ip_port FROM users WHERE username = ? AND is_online = 1";
             try (PreparedStatement preparedStatement = connection.prepareStatement(selectSql)) {
                 preparedStatement.setString(1, username);
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -417,5 +425,24 @@ public class ServerSkel {
         }
 		return ipPort;
 	}
-
+	
+	private void updateUserStatus(boolean isOnline, String username) {
+		int isOnlineInt = isOnline ? 1 : 0;
+		try (Connection connection = dataSource.getConnection()) {
+			String updateSql = "UPDATE users SET is_online = ? WHERE username = ?";
+			try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
+				preparedStatement.setInt(1, isOnlineInt);
+				preparedStatement.setString(2, username);
+				int rowsAffected = preparedStatement.executeUpdate();
+			    if (rowsAffected == 1) {
+			        System.out.println("User's online status updated successfully.");
+			    } else {
+			        System.out.println("User's online status update failed.");
+			    }
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+	}
 }

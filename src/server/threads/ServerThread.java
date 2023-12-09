@@ -63,7 +63,12 @@ public class ServerThread extends Thread {
 						username = (String) in.readObject();
 						List<String> list = serverSkel.getIpPortOfGroup(topic, username);
 						out.writeObject(list);
-						break;		
+						break;	
+					case "LOGOUT":
+						username = (String) in.readObject();
+						serverSkel.logoutUser(username);
+						out.writeObject(0);
+						break;
 				}
 			} catch (ClassNotFoundException | IOException e) {
 				break;

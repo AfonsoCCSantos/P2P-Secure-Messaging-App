@@ -3,6 +3,7 @@ package client;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -176,7 +177,12 @@ public class ClientStub {
 					SSEUtils.update(keyword, username, sseObjects);
 				}
 			}
-		} catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
+		
+		} catch (ConnectException e) {
+			System.out.println("Could not connect to the user. The user is likely offline.");
+			return 0;
+		}
+		catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
 			e.printStackTrace();
 		}
 		return 0;
@@ -469,6 +475,14 @@ public class ClientStub {
 	}
 	
 	public void logout(String pathToSSEObjects, String pathToAbeObjects) {
+		int code = 0;
+		try {
+			outToServer.writeObject("LOGOUT");
+			outToServer.writeObject(user);
+			code = (Integer) inFromServer.readObject();
+		} catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
 		Utils.serializeSSEObjectToFile(sseObjects, pathToSSEObjects);
 		Utils.serializeAbeObjectsToFile(abeObjects, pathToAbeObjects);
 	}
