@@ -1,4 +1,4 @@
-# P2P Secure Messaging 
+# P2P Secure Messaging App
 
 A P2P secure messaging app that offers the following functionalities:
 - End-to-end encrypted 1-1 P2P conversations
